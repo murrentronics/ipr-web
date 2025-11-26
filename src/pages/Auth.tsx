@@ -60,7 +60,7 @@ const Auth = () => {
       // Validate input
       signupSchema.parse(signupData);
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: signupData.email,
         password: signupData.password,
         options: {
@@ -88,10 +88,20 @@ const Auth = () => {
           });
         }
       } else {
-        toast({
-          title: "Success!",
-          description: "Account created successfully. Please check your email to confirm.",
-        });
+        // If email confirmation is disabled, user will be logged in immediately
+        if (data.session) {
+          toast({
+            title: "Success!",
+            description: "Account created successfully. Redirecting to dashboard...",
+          });
+          navigate('/dashboard');
+        } else {
+          // Email confirmation is enabled
+          toast({
+            title: "Success!",
+            description: "Account created successfully. Please check your email to confirm.",
+          });
+        }
         // Clear form
         setSignupData({ firstName: "", lastName: "", email: "", password: "", phone: "" });
       }
