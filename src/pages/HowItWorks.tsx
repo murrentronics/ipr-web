@@ -39,8 +39,7 @@ const HowItWorks = () => {
                     </div>
                     <p className="text-muted-foreground mb-4">
                       Sign up and select how many contracts you want to purchase ($10,000 each). 
-                      Request to join an available open group. Each group accepts up to 24 members 
-                      plus one admin (25 total).
+                      Request to join an available open group. Each group accepts up to 25 members.
                     </p>
                     <div className="bg-muted/50 p-4 rounded-lg">
                       <p className="text-sm font-semibold">What happens: Admin reviews and approves your request</p>
@@ -69,9 +68,9 @@ const HowItWorks = () => {
                       <h3 className="text-2xl font-bold">Wait for Group to Fill</h3>
                     </div>
                     <p className="text-muted-foreground mb-4">
-                      Once your group reaches 25 members (or 24 contracts, whichever comes first), 
-                      the group automatically locks. All members receive a notification that they 
-                      have 3 days to deposit their funds at our office.
+                      Once your group reaches 25 members or 25 contracts, the group automatically 
+                      locks. All members receive a notification that they have 3 days to deposit 
+                      their funds at our office.
                     </p>
                     <div className="bg-muted/50 p-4 rounded-lg">
                       <p className="text-sm font-semibold">
@@ -103,7 +102,7 @@ const HowItWorks = () => {
                     </div>
                     <p className="text-muted-foreground mb-4">
                       Within 3 days of group lock notification, visit our office to deposit your 
-                      investment funds. This ensures all 25 members are committed and ready to 
+                      investment funds. This ensures all members are committed and ready to 
                       proceed with the property development.
                     </p>
                     <div className="bg-muted/50 p-4 rounded-lg">

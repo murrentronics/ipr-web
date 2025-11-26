@@ -116,14 +116,16 @@ export const Layout = ({ children }: LayoutProps) => {
 
               {user && (
                 <>
-                  <Button
-                    variant={isActive('/dashboard') ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => navigate('/dashboard')}
-                  >
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
+                  {!isAdmin && (
+                    <Button
+                      variant={isActive('/dashboard') ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  )}
                   {isAdmin && (
                     <Button
                       variant={isActive('/admin') ? 'default' : 'ghost'}

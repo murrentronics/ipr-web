@@ -89,9 +89,6 @@ const Admin = () => {
 
   const createNewGroup = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
       // Generate group number
       const { data: lastGroup } = await supabase
         .from('groups')
@@ -108,30 +105,16 @@ const Admin = () => {
 
       const groupNumber = `IPR${String(nextNumber).padStart(5, '0')}`;
 
-      // Create group
-      const { data: newGroup, error: groupError } = await supabase
+      // Create group with 0 members (admin does not invest)
+      const { error: groupError } = await supabase
         .from('groups')
         .insert({
           group_number: groupNumber,
           status: 'open',
-          total_members: 1,
-        })
-        .select()
-        .single();
-
-      if (groupError) throw groupError;
-
-      // Add admin as first member
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .insert({
-          user_id: session.user.id,
-          group_id: newGroup.id,
-          contract_number: `CNT-${Date.now()}`,
-          status: 'approved',
+          total_members: 0,
         });
 
-      if (contractError) throw contractError;
+      if (groupError) throw groupError;
 
       toast({
         title: "Success",
