@@ -87,9 +87,9 @@ const Dashboard = () => {
       
       setGroups(groupsData || []);
 
-      // Load user's contracts
+      // Load user's contracts (or join_requests in your case)
       const { data: contractsData } = await supabase
-        .from('contracts')
+        .from('join_requests')
         .select(`
           *,
           groups (
@@ -116,15 +116,14 @@ const Dashboard = () => {
     if (!user) return;
 
     try {
-      const contractNumber = `CNT-${Date.now()}`;
-      
+      const requestId = `REQ-${Date.now()}`; // optional, if needed
       const { error } = await supabase
-        .from('contracts')
+        .from('join_requests')
         .insert({
           user_id: user.id,
           group_id: groupId,
-          contract_number: contractNumber,
-          status: 'pending_approval',
+          contracts_requested: 1, // or adjust as needed
+          status: 'pending',
         });
 
       if (error) throw error;
@@ -134,7 +133,7 @@ const Dashboard = () => {
         description: "Your request has been submitted for admin approval.",
       });
 
-      // Reload contracts
+      // Reload join requests
       loadUserData(user.id);
     } catch (error: any) {
       toast({
@@ -147,7 +146,7 @@ const Dashboard = () => {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      'pending_approval': 'outline',
+      'pending': 'outline',
       'approved': 'secondary',
       'funds_deposited': 'default',
       'active': 'default',
@@ -220,7 +219,7 @@ const Dashboard = () => {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Pending Approval</p>
                   <p className="text-2xl font-bold">
-                    {contracts.filter(c => c.status === 'pending_approval').length}
+                    {contracts.filter(c => c.status === 'pending').length}
                   </p>
                 </div>
                 <Clock className="w-8 h-8 text-success opacity-50" />
