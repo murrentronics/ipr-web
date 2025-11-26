@@ -40,7 +40,7 @@ const Dashboard = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         navigate('/auth');
         return;
@@ -75,7 +75,7 @@ const Dashboard = () => {
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       setProfile(profileData);
 
       // Load groups
@@ -84,10 +84,9 @@ const Dashboard = () => {
         .select('*')
         .eq('status', 'open')
         .order('created_at', { ascending: false });
-      
       setGroups(groupsData || []);
 
-      // Load user's contracts (or join_requests in your case)
+      // Load user's join_requests
       const { data: contractsData } = await supabase
         .from('join_requests')
         .select(`
@@ -98,7 +97,6 @@ const Dashboard = () => {
           )
         `)
         .eq('user_id', userId);
-      
       setContracts(contractsData || []);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -114,26 +112,20 @@ const Dashboard = () => {
 
   const requestToJoinGroup = async (groupId: string) => {
     if (!user) return;
-
     try {
-      const requestId = `REQ-${Date.now()}`; // optional, if needed
       const { error } = await supabase
         .from('join_requests')
         .insert({
           user_id: user.id,
           group_id: groupId,
-          contracts_requested: 1, // or adjust as needed
+          contracts_requested: 1,
           status: 'pending',
         });
-
       if (error) throw error;
-
       toast({
         title: "Success!",
         description: "Your request has been submitted for admin approval.",
       });
-
-      // Reload join requests
       loadUserData(user.id);
     } catch (error: any) {
       toast({
@@ -152,7 +144,6 @@ const Dashboard = () => {
       'active': 'default',
       'completed': 'secondary',
     };
-    
     return (
       <Badge variant={variants[status] || 'default'}>
         {status.replace(/_/g, ' ').toUpperCase()}
@@ -205,7 +196,7 @@ const Dashboard = () => {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Total Investment</p>
                   <p className="text-2xl font-bold">
-                    ${contracts.reduce((sum, c) => sum + Number(c.amount), 0).toLocaleString()}
+                    ${contracts.reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
                   </p>
                 </div>
                 <DollarSign className="w-8 h-8 text-accent opacity-50" />
@@ -264,7 +255,7 @@ const Dashboard = () => {
                       <p className="font-semibold">{contract.contract_number}</p>
                       <p className="text-sm text-muted-foreground">
                         Group: {contract.groups?.group_number || 'N/A'} | 
-                        Amount: ${Number(contract.amount).toLocaleString()}
+                        Amount: ${Number(contract.amount ?? 0).toLocaleString()}
                       </p>
                     </div>
                     {getStatusBadge(contract.status)}
@@ -297,11 +288,11 @@ const Dashboard = () => {
                       <h3 className="text-lg font-semibold">{group.group_number}</h3>
                       <Badge variant="outline">
                         <Users className="w-3 h-3 mr-1" />
-                        {group.total_members}/{group.max_members}
+                        {group.total_members ?? 0}/{group.max_members ?? 0}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      {group.max_members - group.total_members} positions available
+                      {(group.max_members ?? 0) - (group.total_members ?? 0)} positions available
                     </p>
                     <Button 
                       className="w-full" 
