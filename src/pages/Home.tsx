@@ -71,7 +71,7 @@ const Home = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Group Investment</h3>
                 <p className="text-muted-foreground">
-                  Join 24 other members in exclusive 25-member investment groups.
+                  Join exclusive 25-member investment groups with other investors.
                 </p>
               </CardContent>
             </Card>
