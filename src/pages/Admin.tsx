@@ -24,7 +24,6 @@ const Admin = () => {
 
   const checkAdminAndLoadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session) {
       navigate('/auth');
       return;
@@ -59,32 +58,30 @@ const Admin = () => {
       .from('groups')
       .select('*')
       .order('created_at', { ascending: false });
-    
     setGroups(groupsData || []);
 
-    // Load pending contracts
+    // Load pending join requests (not contracts)
     const { data: pendingData } = await supabase
-      .from('contracts')
+      .from('join_requests')
       .select(`
         *,
         profiles (first_name, last_name, email),
         groups (group_number)
       `)
-      .eq('status', 'pending_approval');
-    
+      .eq('status', 'pending');
+
     setPendingContracts(pendingData || []);
 
-    // Load all contracts
-    const { data: allContractsData } = await supabase
-      .from('contracts')
+    // Load all join requests
+    const { data: allRequestsData } = await supabase
+      .from('join_requests')
       .select(`
         *,
         profiles (first_name, last_name, email),
         groups (group_number)
       `)
       .order('created_at', { ascending: false });
-    
-    setAllContracts(allContractsData || []);
+    setAllContracts(allRequestsData || []);
   };
 
   const createNewGroup = async () => {
@@ -133,15 +130,15 @@ const Admin = () => {
 
   const approveContract = async (contractId: string, groupId: string) => {
     try {
-      // Update contract status
-      const { error: contractError } = await supabase
-        .from('contracts')
+      // Update join request status to 'approved'
+      const { error: requestError } = await supabase
+        .from('join_requests')
         .update({ status: 'approved', approved_at: new Date().toISOString() })
         .eq('id', contractId);
 
-      if (contractError) throw contractError;
+      if (requestError) throw requestError;
 
-      // Update group member count
+      // Increment group members
       const { data: group } = await supabase
         .from('groups')
         .select('total_members, max_members')
@@ -164,10 +161,9 @@ const Admin = () => {
 
       toast({
         title: "Success",
-        description: "Contract approved successfully!",
+        description: "Join request approved!",
       });
-
-      loadAdminData();
+      await loadAdminData();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -180,7 +176,7 @@ const Admin = () => {
   const rejectContract = async (contractId: string) => {
     try {
       const { error } = await supabase
-        .from('contracts')
+        .from('join_requests')
         .delete()
         .eq('id', contractId);
 
@@ -188,10 +184,9 @@ const Admin = () => {
 
       toast({
         title: "Success",
-        description: "Contract rejected and removed.",
+        description: "Join request rejected and removed.",
       });
-
-      loadAdminData();
+      await loadAdminData();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -214,10 +209,11 @@ const Admin = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
+        {/* Header with create group button */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage groups, contracts, and members</p>
+            <p className="text-muted-foreground">Manage groups, join requests, and members</p>
           </div>
           <Button onClick={createNewGroup}>
             <Plus className="w-4 h-4 mr-2" />
@@ -225,48 +221,46 @@ const Admin = () => {
           </Button>
         </div>
 
+        {/* Tabs for different views */}
         <Tabs defaultValue="pending" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="pending">
               Pending Approvals ({pendingContracts.length})
             </TabsTrigger>
             <TabsTrigger value="groups">Groups ({groups.length})</TabsTrigger>
-            <TabsTrigger value="contracts">All Contracts ({allContracts.length})</TabsTrigger>
+            <TabsTrigger value="contracts">All Requests ({allContracts.length})</TabsTrigger>
           </TabsList>
 
+          {/* Pending join requests */}
           <TabsContent value="pending">
             <Card>
               <CardHeader>
-                <CardTitle>Pending Contract Approvals</CardTitle>
+                <CardTitle>Pending Join Requests</CardTitle>
                 <CardDescription>Review and approve member requests</CardDescription>
               </CardHeader>
               <CardContent>
                 {pendingContracts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No pending approvals
+                    No pending requests
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {pendingContracts.map((contract) => (
-                      <div
-                        key={contract.id}
-                        className="p-4 border border-border rounded-lg"
-                      >
+                    {pendingContracts.map((request) => (
+                      <div key={request.id} className="p-4 border border-border rounded-lg">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-semibold">
-                              {contract.profiles?.first_name} {contract.profiles?.last_name}
+                              {request.profiles?.first_name} {request.profiles?.last_name}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {contract.profiles?.email} | Group: {contract.groups?.group_number} | 
-                              Amount: ${Number(contract.amount).toLocaleString()}
+                              {request.profiles?.email} | Group: {request.groups?.group_number} | 
+                              Requested to join
                             </p>
                           </div>
                           <div className="flex gap-2">
                             <Button
                               size="sm"
-                              variant="default"
-                              onClick={() => approveContract(contract.id, contract.group_id)}
+                              onClick={() => approveContract(request.id, request.group_id)}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
                               Approve
@@ -274,7 +268,7 @@ const Admin = () => {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => rejectContract(contract.id)}
+                              onClick={() => rejectContract(request.id)}
                             >
                               <XCircle className="w-4 h-4 mr-1" />
                               Reject
@@ -289,6 +283,7 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
+          {/* Groups */}
           <TabsContent value="groups">
             <Card>
               <CardHeader>
@@ -326,30 +321,30 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
+          {/* All join requests */}
           <TabsContent value="contracts">
             <Card>
               <CardHeader>
-                <CardTitle>All Contracts</CardTitle>
-                <CardDescription>View all investment contracts</CardDescription>
+                <CardTitle>All Join Requests</CardTitle>
+                <CardDescription>View all join requests</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {allContracts.map((contract) => (
+                  {allContracts.map((request) => (
                     <div
-                      key={contract.id}
+                      key={request.id}
                       className="flex items-center justify-between p-4 border border-border rounded-lg"
                     >
                       <div>
                         <p className="font-semibold">
-                          {contract.profiles?.first_name} {contract.profiles?.last_name}
+                          {request.profiles?.first_name} {request.profiles?.last_name}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {contract.contract_number} | Group: {contract.groups?.group_number} | 
-                          ${Number(contract.amount).toLocaleString()}
+                          {request.groups?.group_number} | Status: {request.status}
                         </p>
                       </div>
-                      <Badge variant={contract.status === 'active' ? 'default' : 'secondary'}>
-                        {contract.status.replace(/_/g, ' ').toUpperCase()}
+                      <Badge variant={request.status === 'approved' ? 'default' : 'secondary'}>
+                        {request.status.toUpperCase()}
                       </Badge>
                     </div>
                   ))}
