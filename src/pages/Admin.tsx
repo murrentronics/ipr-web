@@ -18,6 +18,11 @@ const Admin = () => {
   const [pendingContracts, setPendingContracts] = useState<any[]>([]);
   const [allContracts, setAllContracts] = useState<any[]>([]);
 
+  // State for toggling group dropdowns and storing members
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [groupMembersMap, setGroupMembersMap] = useState<Record<string, any[]>>({});
+  const [loadingMembersMap, setLoadingMembersMap] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     checkAdminAndLoadData();
   }, []);
@@ -60,7 +65,7 @@ const Admin = () => {
       .order('created_at', { ascending: false });
     setGroups(groupsData || []);
 
-    // Load pending join requests (not contracts)
+    // Load pending join requests
     const { data: pendingData } = await supabase
       .from('join_requests')
       .select(`
@@ -84,144 +89,39 @@ const Admin = () => {
     setAllContracts(allRequestsData || []);
   };
 
-  const createNewGroup = async () => {
-    try {
-      // Generate group number
-      const { data: lastGroup } = await supabase
-        .from('groups')
-        .select('group_number')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  // Function to toggle group dropdown
+  const toggleGroupDropdown = async (groupId: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
 
-      let nextNumber = 1;
-      if (lastGroup?.group_number) {
-        const currentNum = parseInt(lastGroup.group_number.replace('IPR', ''));
-        nextNumber = currentNum + 1;
-      }
-
-      const groupNumber = `IPR${String(nextNumber).padStart(5, '0')}`;
-
-      // Create group with 0 members (admin does not invest)
-      const { error: groupError } = await supabase
-        .from('groups')
-        .insert({
-          group_number: groupNumber,
-          status: 'open',
-          total_members: 0,
-        });
-
-      if (groupError) throw groupError;
-
-      toast({
-        title: "Success",
-        description: `Group ${groupNumber} created successfully!`,
-      });
-
-      loadAdminData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const approveContract = async (contractId: string, groupId: string) => {
-    try {
-      // Update join request status to 'approved'
-      const { error: requestError } = await supabase
+    // If expanding, fetch members
+    if (!groupMembersMap[groupId]) {
+      setLoadingMembersMap((prev) => ({ ...prev, [groupId]: true }));
+      const { data } = await supabase
         .from('join_requests')
-        .update({ status: 'approved', approved_at: new Date().toISOString() })
-        .eq('id', contractId);
+        .select('profiles!inner, amount_paid, contract_locked') // replace with your actual fields
+        .eq('group_id', groupId)
+        .eq('status', 'approved');
 
-      if (requestError) throw requestError;
-
-      // Increment group members
-      const { data: group } = await supabase
-        .from('groups')
-        .select('total_members, max_members')
-        .eq('id', groupId)
-        .single();
-
-      if (group) {
-        const newTotal = group.total_members + 1;
-        const { error: groupError } = await supabase
-          .from('groups')
-          .update({ 
-            total_members: newTotal,
-            status: newTotal >= group.max_members ? 'locked' : 'open',
-            locked_at: newTotal >= group.max_members ? new Date().toISOString() : null,
-          })
-          .eq('id', groupId);
-
-        if (groupError) throw groupError;
-      }
-
-      toast({
-        title: "Success",
-        description: "Join request approved!",
-      });
-      await loadAdminData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      setGroupMembersMap((prev) => ({ ...prev, [groupId]: data || [] }));
+      setLoadingMembersMap((prev) => ({ ...prev, [groupId]: false }));
     }
   };
-
-  const rejectContract = async (contractId: string) => {
-    try {
-      const { error } = await supabase
-        .from('join_requests')
-        .delete()
-        .eq('id', contractId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Join request rejected and removed.",
-      });
-      await loadAdminData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-12">
-          <div className="text-center">Loading...</div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
-        {/* Header with create group button */}
+        {/* Header without create group button */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage groups, join requests, and members</p>
           </div>
-          <Button onClick={createNewGroup}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create New Group
-          </Button>
         </div>
 
-        {/* Tabs for different views */}
+        {/* Tabs */}
         <Tabs defaultValue="pending" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="pending">
@@ -231,7 +131,7 @@ const Admin = () => {
             <TabsTrigger value="contracts">All Requests ({allContracts.length})</TabsTrigger>
           </TabsList>
 
-          {/* Pending join requests */}
+          {/* Pending requests */}
           <TabsContent value="pending">
             <Card>
               <CardHeader>
@@ -240,9 +140,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 {pendingContracts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No pending requests
-                  </div>
+                  <div className="text-center py-8 text-muted-foreground">No pending requests</div>
                 ) : (
                   <div className="space-y-4">
                     {pendingContracts.map((request) => (
@@ -258,6 +156,7 @@ const Admin = () => {
                             </p>
                           </div>
                           <div className="flex gap-2">
+                            {/* Approve and reject buttons, you can implement handlers */}
                             <Button
                               size="sm"
                               onClick={() => approveContract(request.id, request.group_id)}
@@ -283,7 +182,7 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          {/* Groups */}
+          {/* Groups with clickable dropdowns for members and info */}
           <TabsContent value="groups">
             <Card>
               <CardHeader>
@@ -292,30 +191,72 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {groups.map((group) => (
-                    <Card key={group.id} className="border-primary/20">
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold">{group.group_number}</h3>
-                          <Badge variant={group.status === 'open' ? 'default' : 'secondary'}>
-                            {group.status.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Members:</span>
-                            <span className="font-semibold">
-                              {group.total_members}/{group.max_members}
-                            </span>
+                  {groups.map((group) => {
+                    const isExpanded = expandedGroups[group.id] || false;
+                    const members = groupMembersMap[group.id] || [];
+                    const isLoadingMembers = loadingMembersMap[group.id] || false;
+
+                    return (
+                      <div
+                        key={group.id}
+                        className="border rounded-lg cursor-pointer hover:bg-gray-50"
+                        onClick={() => toggleGroupDropdown(group.id)}
+                      >
+                        <div className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold">{group.group_number}</h3>
+                            <Badge variant={group.status === 'open' ? 'default' : 'secondary'}>
+                              {group.status.toUpperCase()}
+                            </Badge>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Status:</span>
-                            <span className="font-semibold capitalize">{group.status}</span>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Members:</span>
+                              <span className="font-semibold">
+                                {group.total_members}/{group.max_members}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Status:</span>
+                              <span className="font-semibold capitalize">{group.status}</span>
+                            </div>
                           </div>
+                          {/* Show dropdown info if expanded */}
+                          {isExpanded && (
+                            <div className="mt-4 border-t pt-4 space-y-2">
+                              {isLoadingMembers ? (
+                                <div>Loading members...</div>
+                              ) : (
+                                <>
+                                  <h4 className="font-semibold mb-2">Approved Members:</h4>
+                                  {members.length > 0 ? (
+                                    members.map((member: any) => (
+                                      <div key={member.profiles.id} className="text-sm pl-2">
+                                        {member.profiles.first_name} {member.profiles.last_name}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-sm">No approved members</div>
+                                  )}
+                                  {/* Additional info for each member, e.g., amount paid or contract locked */}
+                                  {members.length > 0 && (
+                                    <div className="mt-2 text-sm">
+                                      <p>
+                                        Contracts Locked: {group.contract_locked || 'N/A'}
+                                      </p>
+                                      <p>
+                                        Amount Paid Status: {members.every(m => m.amount_paid) ? 'Paid' : 'Pending'}
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
