@@ -15,7 +15,7 @@ const signupSchema = z.object({
   lastName: z.string().min(1, "Last name is required").max(50),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  phone: z.string().optional(),
+  phone: z.string().min(7, "Phone number is required"),
 });
 
 const loginSchema = z.object({
@@ -249,13 +249,14 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone (Optional)</Label>
+                      <Label htmlFor="phone">Phone</Label>
                       <Input
                         id="phone"
                         type="tel"
                         placeholder="+1 (555) 123-4567"
                         value={signupData.phone}
                         onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
+                        required
                       />
                     </div>
                     <div className="space-y-2">

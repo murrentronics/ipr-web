@@ -2,6 +2,9 @@ import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +25,7 @@ interface Contract {
   amount: number;
   status: string;
   group_id: string;
+  contracts_requested?: number;
   groups: {
     group_number: string;
     status: string;
@@ -36,6 +40,12 @@ const Dashboard = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [contractsCount, setContractsCount] = useState<number>(1);
+  const [submitting, setSubmitting] = useState(false);
+  const PRICE_PER_CONTRACT = 10000;
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -98,6 +108,14 @@ const Dashboard = () => {
         `)
         .eq('user_id', userId);
       setContracts(contractsData || []);
+      const counts: Record<string, number> = {};
+      (contractsData || []).forEach((req: any) => {
+        if (req.status === 'pending') {
+          const qty = Number(req.contracts_requested ?? 1);
+          counts[req.group_id] = (counts[req.group_id] || 0) + qty;
+        }
+      });
+      setPendingCounts(counts);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -110,15 +128,33 @@ const Dashboard = () => {
     }
   };
 
-  const requestToJoinGroup = async (groupId: string) => {
+  const requestToJoinGroup = async (groupId: string, requested: number) => {
     if (!user) return;
     try {
+      setSubmitting(true);
+      const { data: existing } = await supabase
+        .from('join_requests')
+        .select('id,status')
+        .eq('user_id', user.id)
+        .eq('group_id', groupId)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (existing) {
+        toast({
+          title: "Already requested",
+          description: "You already have a pending request for this group.",
+        });
+        setJoinDialogOpen(false);
+        setSubmitting(false);
+        return;
+      }
       const { error } = await supabase
         .from('join_requests')
         .insert({
           user_id: user.id,
           group_id: groupId,
-          contracts_requested: 1,
+          contracts_requested: requested,
           status: 'pending',
         });
       if (error) throw error;
@@ -127,13 +163,40 @@ const Dashboard = () => {
         description: "Your request has been submitted for admin approval.",
       });
       loadUserData(user.id);
+      setJoinDialogOpen(false);
+      setSelectedGroup(null);
+      setContractsCount(1);
+      setPendingCounts((prev) => ({
+        ...prev,
+        [groupId]: (prev[groupId] || 0) + requested,
+      }));
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      const message = String(error?.message || '').toLowerCase();
+      if (
+        message.includes('duplicate key') ||
+        message.includes('unique constraint') ||
+        message.includes('join_requests_group_id_user_id_status_key')
+      ) {
+        toast({
+          title: "Already requested",
+          description: "You already have a pending request for this group.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const openJoinDialog = (group: Group) => {
+    setSelectedGroup(group);
+    setContractsCount(1);
+    setJoinDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -252,11 +315,16 @@ const Dashboard = () => {
                     className="flex items-center justify-between p-4 border border-border rounded-lg"
                   >
                     <div>
-                      <p className="font-semibold">{contract.contract_number}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Group: {contract.groups?.group_number || 'N/A'} | 
-                        Amount: ${Number(contract.amount ?? 0).toLocaleString()}
-                      </p>
+                      <p className="font-semibold">{contract.contract_number || contract.groups?.group_number}</p>
+                      {contract.status === 'pending' ? (
+                        <p className="text-sm text-muted-foreground">
+                          Group: {contract.groups?.group_number || 'N/A'} | Contracts: {Number(contract.contracts_requested ?? 1)} | Total: ${((Number(contract.contracts_requested ?? 1)) * PRICE_PER_CONTRACT).toLocaleString()}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Group: {contract.groups?.group_number || 'N/A'} | Amount: ${Number(contract.amount ?? 0).toLocaleString()}
+                        </p>
+                      )}
                     </div>
                     {getStatusBadge(contract.status)}
                   </div>
@@ -288,16 +356,16 @@ const Dashboard = () => {
                       <h3 className="text-lg font-semibold">{group.group_number}</h3>
                       <Badge variant="outline">
                         <Users className="w-3 h-3 mr-1" />
-                        {group.total_members ?? 0}/{group.max_members ?? 0}
+                        {(group.total_members ?? 0) + (pendingCounts[group.id] ?? 0)}/{group.max_members ?? 0}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      {(group.max_members ?? 0) - (group.total_members ?? 0)} positions available
+                      {Math.max(0, (group.max_members ?? 0) - (group.total_members ?? 0) - (pendingCounts[group.id] ?? 0))} positions available
                     </p>
                     <Button 
                       className="w-full" 
                       size="sm"
-                      onClick={() => requestToJoinGroup(group.id)}
+                      onClick={() => openJoinDialog(group)}
                     >
                       Request to Join
                     </Button>
@@ -308,6 +376,36 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+      <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request to Join</DialogTitle>
+            <DialogDescription>
+              {selectedGroup ? `${selectedGroup.group_number}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="contracts">Contracts to lock</Label>
+              <Input
+                id="contracts"
+                type="number"
+                min={1}
+                max={selectedGroup ? Math.max(1, (selectedGroup.max_members ?? 0) - (selectedGroup.total_members ?? 0) - (pendingCounts[selectedGroup.id] ?? 0)) : 25}
+                value={contractsCount}
+                onChange={(e) => setContractsCount(Math.max(1, Number(e.target.value)))}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Total: ${((contractsCount || 1) * PRICE_PER_CONTRACT).toLocaleString()}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setJoinDialogOpen(false)} disabled={submitting}>Cancel</Button>
+            <Button onClick={() => selectedGroup && requestToJoinGroup(selectedGroup.id, contractsCount)} disabled={submitting}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

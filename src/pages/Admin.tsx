@@ -17,6 +17,9 @@ const Admin = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [pendingContracts, setPendingContracts] = useState<any[]>([]);
   const [allContracts, setAllContracts] = useState<any[]>([]);
+  const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
+  const [groupsMap, setGroupsMap] = useState<Record<string, any>>({});
+  const PRICE_PER_CONTRACT = 10000;
 
   // State for toggling group dropdowns and storing members
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -65,17 +68,42 @@ const Admin = () => {
       .order('created_at', { ascending: false });
     setGroups(groupsData || []);
 
-    // Load pending join requests
+    // Load pending join requests (avoid relationship filters that may be restricted by RLS)
     const { data: pendingData } = await supabase
       .from('join_requests')
-      .select(`
-        *,
-        profiles (first_name, last_name, email),
-        groups (group_number)
-      `)
-      .eq('status', 'pending');
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
 
     setPendingContracts(pendingData || []);
+
+    // Hydrate related data for display
+    const userIds = Array.from(new Set((pendingData || []).map((r: any) => r.user_id).filter(Boolean)));
+    const groupIds = Array.from(new Set((pendingData || []).map((r: any) => r.group_id).filter(Boolean)));
+
+    if (userIds.length) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, phone')
+        .in('id', userIds);
+      const pMap: Record<string, any> = {};
+      (profiles || []).forEach((p: any) => { pMap[p.id] = p; });
+      setProfilesMap(pMap);
+    } else {
+      setProfilesMap({});
+    }
+
+    if (groupIds.length) {
+      const { data: groupsL } = await supabase
+        .from('groups')
+        .select('id, group_number')
+        .in('id', groupIds);
+      const gMap: Record<string, any> = {};
+      (groupsL || []).forEach((g: any) => { gMap[g.id] = g; });
+      setGroupsMap(gMap);
+    } else {
+      setGroupsMap({});
+    }
 
     // Load all join requests
     const { data: allRequestsData } = await supabase
@@ -88,6 +116,46 @@ const Admin = () => {
       .order('created_at', { ascending: false });
     setAllContracts(allRequestsData || []);
   };
+
+  const approveContract = async (requestId: string, groupId: string) => {
+    const { error } = await supabase
+      .from('join_requests')
+      .update({ status: 'approved' })
+      .eq('id', requestId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Approved', description: 'Request approved successfully.' });
+    await loadAdminData();
+  };
+
+  const rejectContract = async (requestId: string) => {
+    const { error } = await supabase
+      .from('join_requests')
+      .update({ status: 'rejected' })
+      .eq('id', requestId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Rejected', description: 'Request rejected.' });
+    await loadAdminData();
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel('admin-join-requests')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'join_requests' }, () => {
+        loadAdminData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin]);
 
   // Function to toggle group dropdown
   const toggleGroupDropdown = async (groupId: string) => {
@@ -148,11 +216,13 @@ const Admin = () => {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-semibold">
-                              {request.profiles?.first_name} {request.profiles?.last_name}
+                              {profilesMap[request.user_id]?.first_name || 'Unknown'} {profilesMap[request.user_id]?.last_name || ''}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {request.profiles?.email} | Group: {request.groups?.group_number} | 
-                              Requested to join
+                              Group: {groupsMap[request.group_id]?.group_number || request.group_id} | Contracts: {request.contracts_requested ?? 1} | Total: ${(Number(request.contracts_requested ?? 1) * PRICE_PER_CONTRACT).toLocaleString()}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Phone: {profilesMap[request.user_id]?.phone || 'N/A'}
                             </p>
                           </div>
                           <div className="flex gap-2">
