@@ -88,6 +88,19 @@ const Auth = () => {
           });
         }
       } else {
+        // Ensure profile row exists with required fields
+        const userId = data.user?.id;
+        if (userId) {
+          await supabase
+            .from('profiles')
+            .upsert({
+              id: userId,
+              first_name: signupData.firstName,
+              last_name: signupData.lastName,
+              phone: signupData.phone,
+              email: signupData.email,
+            });
+        }
         // If email confirmation is disabled, user will be logged in immediately
         if (data.session) {
           toast({

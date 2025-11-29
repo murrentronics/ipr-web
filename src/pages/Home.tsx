@@ -3,9 +3,31 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Users, TrendingUp, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase";
 
 const Home = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+
+      if (session) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        setIsAdmin(!!roleData);
+      }
+    };
+    checkUser();
+  }, []);
 
   return (
     <Layout>
@@ -21,14 +43,16 @@ const Home = () => {
               Join closed membership investment groups and generate $1,800/month for 60 months. 
               Perfect for first-time investors and stay-at-home moms.
             </p>
-            <div className="flex gap-4 justify-center">
-              <Button size="lg" onClick={() => navigate('/auth')} className="shadow-lg">
-                Get Started Today
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/how-it-works')}>
-                Learn More
-              </Button>
-            </div>
+            { !isAdmin && (
+              <div className="flex gap-4 justify-center">
+                <Button size="lg" onClick={() => navigate('/auth')} className="shadow-lg">
+                  Get Started Today
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate('/how-it-works')}>
+                  Learn More
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -145,14 +169,16 @@ const Home = () => {
             <p className="text-xl text-primary-foreground/90 mb-8">
               Join thousands of investors already earning passive income through IPR
             </p>
-            <Button 
-              size="lg" 
-              variant="secondary"
-              onClick={() => navigate('/auth')}
-              className="shadow-glow"
-            >
-              Create Your Account
-            </Button>
+            { !isLoggedIn && (
+              <Button 
+                size="lg" 
+                variant="secondary"
+                onClick={() => navigate('/auth')}
+                className="shadow-glow"
+              >
+                Create Your Account
+              </Button>
+            )}
           </div>
         </div>
       </section>

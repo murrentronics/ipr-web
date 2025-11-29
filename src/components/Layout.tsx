@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield } from "lucide-react";
+import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield, Users as UsersIcon, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -15,12 +15,16 @@ export const Layout = ({ children }: LayoutProps) => {
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [roleResolved, setRoleResolved] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+      } else {
+        setIsAdmin(false);
+        setRoleResolved(true);
       }
     });
 
@@ -30,6 +34,7 @@ export const Layout = ({ children }: LayoutProps) => {
         checkAdminStatus(session.user.id);
       } else {
         setIsAdmin(false);
+        setRoleResolved(true);
       }
     });
 
@@ -46,7 +51,10 @@ export const Layout = ({ children }: LayoutProps) => {
 
     if (!error && data) {
       setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
     }
+    setRoleResolved(true);
   };
 
   const handleLogout = async () => {
@@ -89,32 +97,36 @@ export const Layout = ({ children }: LayoutProps) => {
                 <Home className="w-4 h-4 mr-2" />
                 Home
               </Button>
-              <Button
-                variant={isActive('/about') ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => navigate('/about')}
-              >
-                <Info className="w-4 h-4 mr-2" />
-                About
-              </Button>
-              <Button
-                variant={isActive('/how-it-works') ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => navigate('/how-it-works')}
-              >
-                <HelpCircle className="w-4 h-4 mr-2" />
-                How It Works
-              </Button>
-              <Button
-                variant={isActive('/contact') ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => navigate('/contact')}
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Contact
-              </Button>
+              {(!isAdmin && roleResolved) && (
+                <>
+                  <Button
+                    variant={isActive('/about') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => navigate('/about')}
+                  >
+                    <Info className="w-4 h-4 mr-2" />
+                    About
+                  </Button>
+                  <Button
+                    variant={isActive('/how-it-works') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => navigate('/how-it-works')}
+                  >
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    How It Works
+                  </Button>
+                  <Button
+                    variant={isActive('/contact') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => navigate('/contact')}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Contact
+                  </Button>
+                </>
+              )}
 
-              {user && (
+              {user && roleResolved && (
                 <>
                   {!isAdmin && (
                     <Button
@@ -127,13 +139,41 @@ export const Layout = ({ children }: LayoutProps) => {
                     </Button>
                   )}
                   {isAdmin && (
+                    <>
+                      <Button
+                        variant={isActive('/admin') ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => navigate('/admin')}
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin
+                      </Button>
+                      <Button
+                        variant={isActive('/users') ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => navigate('/users')}
+                      >
+                        <UsersIcon className="w-4 h-4 mr-2" />
+                        Users
+                      </Button>
+                      <Button
+                        variant={isActive('/admin/profile') ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => navigate('/admin/profile')}
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Profile
+                      </Button>
+                    </>
+                  )}
+                  {!isAdmin && (
                     <Button
-                      variant={isActive('/admin') ? 'default' : 'ghost'}
+                      variant={isActive('/profile') ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => navigate('/admin')}
+                      onClick={() => navigate('/profile')}
                     >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Admin
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
                     </Button>
                   )}
                   <Button variant="outline" size="sm" onClick={handleLogout}>

@@ -5,11 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { User } from "@supabase/supabase-js";
 import { Users, DollarSign, FileText, Clock, TrendingUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  email: string;
+}
 
 interface Group {
   id: string;
@@ -21,22 +31,24 @@ interface Group {
 
 interface Contract {
   id: string;
-  contract_number: string;
-  amount: number;
+  contract_number?: string;
+  amount?: number;
   status: string;
   group_id: string;
   contracts_requested?: number;
   groups: {
     group_number: string;
     status: string;
+    max_members?: number;
+    total_members?: number;
   };
 }
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,38 +58,59 @@ const Dashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const PRICE_PER_CONTRACT = 10000;
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
+  const MONTHLY_PAYOUT_PER_CONTRACT = 1800;
+  const formatDMY = (d: Date) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`;
+  const [activationMap, setActivationMap] = useState<Record<string, Date>>({});
+  const [groupCompleteMap, setGroupCompleteMap] = useState<Record<string, boolean>>({});
+
+  const checkAuth = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      navigate('/auth');
+      return;
+    }
+
+    // Check if user is admin
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleData) {
+      // Redirect admins to admin page
+      navigate('/admin');
+      return;
+    }
+
+    setUser(session.user);
+    loadUserData(session.user.id);
+    navigate('/');
+  }, [navigate, loadUserData]);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-
-      // Check if user is admin
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (roleData) {
-        // Redirect admins to admin page
-        navigate('/admin');
-        return;
-      }
-
-      setUser(session.user);
-      loadUserData(session.user.id);
-    };
-
     checkAuth();
-  }, [navigate]);
+  }, [checkAuth, loadUserData]);
 
-  const loadUserData = async (userId: string) => {
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'join_requests' }, () => {
+        loadUserData(user.id);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
+        loadUserData(user.id);
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadUserData]);
+
+  const loadUserData = useCallback(async (userId: string) => {
     try {
       // Load profile
       const { data: profileData } = await supabase
@@ -103,13 +136,47 @@ const Dashboard = () => {
           *,
           groups (
             group_number,
-            status
+            status,
+            max_members,
+            total_members
           )
         `)
         .eq('user_id', userId);
       setContracts(contractsData || []);
+      const gids = Array.from(new Set((contractsData || []).map((r: Contract) => r.group_id).filter(Boolean)));
+      if (gids.length) {
+        const { data: paidRows } = await supabase
+          .from('join_requests')
+          .select('group_id, updated_at, status')
+          .in('group_id', gids)
+          .eq('status', 'funds_deposited');
+        const actMap: Record<string, Date> = {};
+        (paidRows || []).forEach((r: { group_id: string; updated_at: string; status: string }) => {
+          const t = r.updated_at ? new Date(r.updated_at).getTime() : 0;
+          const prev = actMap[r.group_id]?.getTime() || 0;
+          if (t > prev) actMap[r.group_id] = new Date(t);
+        });
+        setActivationMap(actMap);
+
+        const { data: statusRows } = await supabase
+          .from('join_requests')
+          .select('group_id, status')
+          .in('group_id', gids);
+        const hasApproved: Record<string, boolean> = {};
+        (statusRows || []).forEach((r: { group_id: string; status: string }) => {
+          if (r.status === 'approved') hasApproved[r.group_id] = true;
+        });
+        const completeMap: Record<string, boolean> = {};
+        (contractsData || []).forEach((r: Contract) => {
+          const g = r.groups || {};
+          const total = Number(g.total_members ?? 0);
+          const max = Number(g.max_members ?? 25);
+          if (r.group_id) completeMap[r.group_id] = total >= max && !hasApproved[r.group_id];
+        });
+        setGroupCompleteMap(completeMap);
+      }
       const counts: Record<string, number> = {};
-      (contractsData || []).forEach((req: any) => {
+      (contractsData || []).forEach((req: Contract) => {
         if (req.status === 'pending') {
           const qty = Number(req.contracts_requested ?? 1);
           counts[req.group_id] = (counts[req.group_id] || 0) + qty;
@@ -126,7 +193,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setProfile, setGroups, setContracts, setActivationMap, setGroupCompleteMap, setPendingCounts, toast, setLoading]);
 
   const requestToJoinGroup = async (groupId: string, requested: number) => {
     if (!user) return;
@@ -134,33 +201,33 @@ const Dashboard = () => {
       setSubmitting(true);
       const { data: existing } = await supabase
         .from('join_requests')
-        .select('id,status')
+        .select('id,status,contracts_requested')
         .eq('user_id', user.id)
         .eq('group_id', groupId)
         .eq('status', 'pending')
         .maybeSingle();
 
-      if (existing) {
-        toast({
-          title: "Already requested",
-          description: "You already have a pending request for this group.",
-        });
-        setJoinDialogOpen(false);
-        setSubmitting(false);
-        return;
+      if (existing?.id) {
+        const currentQty = Number(existing.contracts_requested ?? 1);
+        const { error: updErr } = await supabase
+          .from('join_requests')
+          .update({ contracts_requested: currentQty + requested })
+          .eq('id', existing.id);
+        if (updErr) throw updErr;
+      } else {
+        const { error } = await supabase
+          .from('join_requests')
+          .insert({
+            user_id: user.id,
+            group_id: groupId,
+            contracts_requested: requested,
+            status: 'pending',
+          });
+        if (error) throw error;
       }
-      const { error } = await supabase
-        .from('join_requests')
-        .insert({
-          user_id: user.id,
-          group_id: groupId,
-          contracts_requested: requested,
-          status: 'pending',
-        });
-      if (error) throw error;
       toast({
         title: "Success!",
-        description: "Your request has been submitted for admin approval.",
+        description: "Your request has been submitted/updated for admin approval.",
       });
       loadUserData(user.id);
       setJoinDialogOpen(false);
@@ -170,7 +237,7 @@ const Dashboard = () => {
         ...prev,
         [groupId]: (prev[groupId] || 0) + requested,
       }));
-    } catch (error: any) {
+    } catch (error: Error) {
       const message = String(error?.message || '').toLowerCase();
       if (
         message.includes('duplicate key') ||
@@ -178,8 +245,8 @@ const Dashboard = () => {
         message.includes('join_requests_group_id_user_id_status_key')
       ) {
         toast({
-          title: "Already requested",
-          description: "You already have a pending request for this group.",
+          title: "Updated",
+          description: "Your pending request was updated for this group.",
         });
       } else {
         toast({
@@ -296,85 +363,160 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* My Contracts */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>My Contracts</CardTitle>
-            <CardDescription>View and manage your investment contracts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {contracts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No contracts yet. Join a group to get started!
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {contracts.map((contract) => (
-                  <div
-                    key={contract.id}
-                    className="flex items-center justify-between p-4 border border-border rounded-lg"
-                  >
-                    <div>
-                      <p className="font-semibold">{contract.contract_number || contract.groups?.group_number}</p>
-                      {contract.status === 'pending' ? (
-                        <p className="text-sm text-muted-foreground">
-                          Group: {contract.groups?.group_number || 'N/A'} | Contracts: {Number(contract.contracts_requested ?? 1)} | Total: ${((Number(contract.contracts_requested ?? 1)) * PRICE_PER_CONTRACT).toLocaleString()}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Group: {contract.groups?.group_number || 'N/A'} | Amount: ${Number(contract.amount ?? 0).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    {getStatusBadge(contract.status)}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="contracts" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="contracts">My Contracts</TabsTrigger>
+            <TabsTrigger value="payouts">Active Groups - Payouts History</TabsTrigger>
+            <TabsTrigger value="groups">Available Groups</TabsTrigger>
+          </TabsList>
 
-        {/* Available Groups */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Groups</CardTitle>
-            <CardDescription>Join an open investment group</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {groups.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No open groups available at the moment. Check back soon!
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-4">
+          <TabsContent value="contracts">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Contracts</CardTitle>
+                <CardDescription>View and manage your investment contracts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {contracts.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No contracts yet. Join a group to get started!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {contracts.map((contract) => (
+                      <div
+                        key={contract.id}
+                        className="flex items-center justify-between p-4 border border-border rounded-lg"
+                      >
+                        <div>
+                          <p className="font-semibold">{contract.contract_number || contract.groups?.group_number}</p>
+                          {contract.status === 'pending' ? (
+                            <p className="text-sm text-muted-foreground">
+                              Group: {contract.groups?.group_number || 'N/A'} | Contracts: {Number(contract.contracts_requested ?? 1)} | Total: ${((Number(contract.contracts_requested ?? 1)) * PRICE_PER_CONTRACT).toLocaleString()}
+                            </p>
+                          ) : contract.status === 'approved' || contract.status === 'funds_deposited' ? (
+                            <p className="text-sm text-muted-foreground">
+                              Group: {contract.groups?.group_number || 'N/A'} | Contracts: {Number(contract.contracts_requested ?? 1)} | Total: ${((Number(contract.contracts_requested ?? 1)) * PRICE_PER_CONTRACT).toLocaleString()}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              Group: {contract.groups?.group_number || 'N/A'} | Amount: ${Number(contract.amount ?? 0).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        {(() => {
+                          const status = (contract.status || '').toLowerCase();
+                          let label = '';
+                          let variant: "default" | "secondary" | "destructive" | "outline" = 'default';
+                          if (status === 'funds_deposited') {
+                            const complete = groupCompleteMap[contract.group_id];
+                            label = complete ? 'PAID-active' : 'PAID-inactive';
+                            variant = 'default';
+                          } else if (status === 'approved') {
+                            label = 'Pending payment';
+                            variant = 'outline';
+                          } else if (status === 'pending') {
+                            label = 'PENDING';
+                            variant = 'outline';
+                          } else {
+                            label = (contract.status || '').replace(/_/g, ' ').toUpperCase();
+                            variant = 'secondary';
+                          }
+                          return <Badge variant={variant}>{label}</Badge>;
+                        })()}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payouts">
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Groups - Payouts History</CardTitle>
+                <CardDescription>Monthly payouts over 60 months</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No payouts yet. Payments start after approval is marked paid.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).map((c) => {
+                      const qty = Number(c.contracts_requested ?? 1);
+                      const start = activationMap[c.group_id] || new Date();
+                      const now = new Date();
+                      const rawMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+                      const adjust = now.getDate() < start.getDate() ? 1 : 0;
+                      const cycles = Math.max(0, Math.min(60, rawMonths - adjust));
+                      const monthly = MONTHLY_PAYOUT_PER_CONTRACT * qty;
+                      const total = monthly * cycles;
+                      const nextPayout = new Date(start.getFullYear(), start.getMonth() + 1, start.getDate());
+                      return (
+                        <div key={c.id} className="p-4 border border-border rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{c.groups?.group_number || 'Group'}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Contracts: {qty} | Monthly Payout: ${monthly.toLocaleString()} | Cycles: {cycles}/60 | Total Collected: ${total.toLocaleString()} | Next Payout: {formatDMY(nextPayout)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="groups">
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Groups</CardTitle>
+                <CardDescription>Join an open investment group</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {groups.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No open groups available at the moment. Check back soon!
+                  </div>
+                ) : (
+              <div className="space-y-4">
                 {groups.map((group) => (
                   <div
                     key={group.id}
                     className="p-6 border border-border rounded-lg hover:border-primary transition-colors"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">{group.group_number}</h3>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold">{group.group_number}</h3>
                       <Badge variant="outline">
                         <Users className="w-3 h-3 mr-1" />
-                        {(group.total_members ?? 0) + (pendingCounts[group.id] ?? 0)}/{group.max_members ?? 0}
+                        {(group.total_members ?? 0)}/{group.max_members ?? 0}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      {Math.max(0, (group.max_members ?? 0) - (group.total_members ?? 0) - (pendingCounts[group.id] ?? 0))} positions available
+                      {Math.max(0, (group.max_members ?? 0) - (group.total_members ?? 0))} positions available
                     </p>
                     <Button 
-                      className="w-full" 
-                      size="sm"
-                      onClick={() => openJoinDialog(group)}
-                    >
-                      Request to Join
-                    </Button>
+                          className="w-full" 
+                          size="sm"
+                          onClick={() => openJoinDialog(group)}
+                        >
+                          Request to Join
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
         <DialogContent>

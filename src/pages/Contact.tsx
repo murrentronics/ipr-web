@@ -1,8 +1,54 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase";
+import { useToast } from "@/hooks/use-toast";
+
+interface SiteInfo {
+  contact_email: string;
+  contact_phone: string;
+  office_address: string;
+  main_phone: string;
+  investment_phone: string;
+  support_email: string;
+  business_hours_weekday: string;
+  business_hours_saturday: string;
+  business_hours_sunday: string;
+}
 
 const Contact = () => {
+  const { toast } = useToast();
+  const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSiteInfo = async () => {
+      const { data, error } = await supabase
+        .from('site_info')
+        .select('*')
+        .single();
+
+      if (error) {
+        toast({ title: 'Error', description: 'Failed to load contact information.', variant: 'destructive' });
+      } else {
+        setSiteInfo(data);
+      }
+      setLoading(false);
+    };
+
+    fetchSiteInfo();
+  }, [toast]);
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <p>Loading contact information...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
@@ -27,10 +73,9 @@ const Contact = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Office Address</h3>
                   <p className="text-muted-foreground">
-                    T.A.M. General Building & Installations<br />
-                    123 Investment Boulevard<br />
-                    Property District<br />
-                    City, State 12345
+                    {siteInfo.office_address.split('\n').map((line: string, index: number) => (
+                      <span key={index}>{line}<br /></span>
+                    ))}
                   </p>
                 </div>
               </div>
@@ -46,8 +91,8 @@ const Contact = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Phone</h3>
                   <p className="text-muted-foreground mb-2">
-                    Main: +1 (555) 123-4567<br />
-                    Investment Inquiries: +1 (555) 123-4568
+                    Main: {siteInfo.main_phone}<br />
+                    Investment Inquiries: {siteInfo.investment_phone}
                   </p>
                 </div>
               </div>
@@ -63,9 +108,7 @@ const Contact = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Email</h3>
                   <p className="text-muted-foreground">
-                    General: info@ipr-investments.com<br />
-                    Support: support@ipr-investments.com<br />
-                    Admin: admin@ipr-investments.com
+                    Support: {siteInfo.support_email}
                   </p>
                 </div>
               </div>
@@ -81,9 +124,9 @@ const Contact = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Business Hours</h3>
                   <p className="text-muted-foreground">
-                    Monday - Friday: 9:00 AM - 6:00 PM<br />
-                    Saturday: 10:00 AM - 4:00 PM<br />
-                    Sunday: Closed
+                    {siteInfo.business_hours_weekday}<br />
+                    {siteInfo.business_hours_saturday}<br />
+                    {siteInfo.business_hours_sunday}
                   </p>
                 </div>
               </div>
