@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield, Users as UsersIcon, User } from "lucide-react";
+import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield, Users as UsersIcon, User, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -165,17 +165,35 @@ export const Layout = ({ children }: LayoutProps) => {
                         <User className="w-4 h-4 mr-2" />
                         Profile
                       </Button>
+                      <Button
+                        variant={isActive('/admin/wallet') ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => navigate('/admin/wallet')}
+                      >
+                        <Wallet className="w-4 h-4 mr-2" />
+                        Wallet
+                      </Button>
                     </>
                   )}
                   {!isAdmin && (
-                    <Button
-                      variant={isActive('/profile') ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => navigate('/profile')}
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      Profile
-                    </Button>
+                    <>
+                      <Button
+                        variant={isActive('/profile') ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => navigate('/profile')}
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Profile
+                      </Button>
+                      <Button
+                        variant={isActive('/wallet') ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => navigate('/wallet')}
+                      >
+                        <Wallet className="w-4 h-4 mr-2" />
+                        Wallet
+                      </Button>
+                    </>
                   )}
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />

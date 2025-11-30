@@ -14,6 +14,8 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import AdminProfile from "./pages/AdminProfile";
+import AdminWallet from "./pages/AdminWallet";
+import MemberWallet from "./pages/MemberWallet";
 import { Layout } from "./components/Layout";
 
 const queryClient = new QueryClient();
@@ -33,8 +35,10 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
+          <Route path="/admin/wallet" element={<AdminWallet />} />
           <Route path="/users" element={<Users />} />
           <Route path="/profile" element={<Layout><MemberProfile /></Layout>} />
+          <Route path="/wallet" element={<Layout><MemberWallet /></Layout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
