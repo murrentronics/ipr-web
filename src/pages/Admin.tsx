@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, CheckCircle, XCircle, Plus } from "lucide-react";
 
@@ -17,6 +18,7 @@ const Admin = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [pendingContracts, setPendingContracts] = useState<any[]>([]);
   const [allContracts, setAllContracts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
   const [groupsMap, setGroupsMap] = useState<Record<string, any>>({});
   const PRICE_PER_CONTRACT = 10000;
@@ -681,11 +683,20 @@ const Admin = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Active Groups</CardTitle>
-                <CardDescription>Groups where all contracts are paid</CardDescription>
+                <CardDescription>View and manage active investment groups</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Search by group number..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
                 <div className="space-y-4">
-                  {activeGroupIds.map((gid) => {
+                    {activeGroupIds
+                      .filter(gid => groupsMap[gid]?.group_number.toLowerCase().includes(searchTerm.toLowerCase()))
+                      .map((gid) => {
                     const group = groups.find((g) => g.id === gid);
                     const members = (groupMembersMap[gid] || []).filter((m: any) => m.paid);
                     const activationMs = members.reduce((max: number, m: any) => {
