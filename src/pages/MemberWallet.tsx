@@ -145,10 +145,7 @@ const MemberWallet = () => {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>My Wallet</CardTitle>
-            <CardDescription>Manage your funds and withdrawal requests.</CardDescription>
-          </CardHeader>
+
           <CardContent>
             <p className="text-2xl font-bold mb-4">Current Balance: ${walletBalance.toFixed(2)}</p>
 

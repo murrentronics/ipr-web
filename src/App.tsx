@@ -38,7 +38,7 @@ const App = () => (
           <Route path="/admin/wallet" element={<AdminWallet />} />
           <Route path="/users" element={<Users />} />
           <Route path="/profile" element={<Layout><MemberProfile /></Layout>} />
-          <Route path="/wallet" element={<Layout><MemberWallet /></Layout>} />
+          <Route path="/wallet" element={<MemberWallet />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
