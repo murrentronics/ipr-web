@@ -39,7 +39,7 @@ const HowItWorks = () => {
                     </div>
                     <p className="text-muted-foreground mb-4">
                       Sign up and select how many contracts you want to purchase ($10,000 each). 
-                      Request to join an available open group. Each group accepts up to 25 members.
+                      Request to join an available open group. Each group accepts up to 25 members or contracts which ever comes first (example 5 members locked 5 contracts = 25 contracts).
                     </p>
                     <div className="bg-muted/50 p-4 rounded-lg">
                       <p className="text-sm font-semibold">What happens: Admin reviews and approves your request</p>
@@ -134,9 +134,11 @@ const HowItWorks = () => {
                       <h3 className="text-2xl font-bold">Construction Begins</h3>
                     </div>
                     <p className="text-muted-foreground mb-4">
-                      With all funds deposited, T.A.M. General Building & Installations begins 
-                      construction of a rental property using the group's pooled investment of 
-                      $250,000 (25 members × $10,000).
+                      For the first group, an initial property will be provided pre-built. For subsequent groups, with all funds deposited, T.A.M. General Building & Installations begins 
+                      construction of a rental property. The group's pooled investment of 
+                      $250,000 (25 members × $10,000) acts as 10% of the financing, with T.A.M.G.B.I. 
+                      financing the remaining 90% to build an investment property large enough 
+                      to support the payouts.
                     </p>
                     <div className="bg-muted/50 p-4 rounded-lg">
                       <p className="text-sm font-semibold">
@@ -173,7 +175,7 @@ const HowItWorks = () => {
                     </p>
                     <div className="bg-success/10 p-4 rounded-lg border border-success/20">
                       <p className="text-sm font-semibold text-success">
-                        💰 Passive income: $1,800/month × 60 months = $108,000 total return
+                        💰 Passive income: $1,800/month × 60 months = $108,000 total return per contract
                       </p>
                     </div>
                   </div>

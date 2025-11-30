@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Layout } from '@/components/Layout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface BankDetails {
   id: string;
@@ -32,12 +33,16 @@ interface WithdrawalRequest {
 const AdminWallet = () => {
   const { toast } = useToast();
   const [pendingRequests, setPendingRequests] = useState<WithdrawalRequest[]>([]);
+  const [approvedRequests, setApprovedRequests] = useState<WithdrawalRequest[]>([]);
+  const [deniedRequests, setDeniedRequests] = useState<WithdrawalRequest[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState<boolean>(false);
   const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
 
   useEffect(() => {
     fetchPendingRequests();
+    fetchApprovedRequests();
+    fetchDeniedRequests();
   }, []);
 
   const fetchPendingRequests = async () => {
@@ -60,6 +65,52 @@ const AdminWallet = () => {
       return;
     }
     setPendingRequests(data || []);
+    fetchProfiles(data?.map(req => req.user_id) || []);
+  };
+
+  const fetchApprovedRequests = async () => {
+    const { data, error } = await supabase
+      .from('withdrawal_requests')
+      .select(`
+        *,
+        bank_details (*)
+      `)
+      .eq('status', 'approved')
+      .order('processed_at', { ascending: false });
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch approved withdrawal requests.',
+        variant: 'destructive',
+      });
+      console.error('Error fetching approved requests:', error);
+      return;
+    }
+    setApprovedRequests(data || []);
+    fetchProfiles(data?.map(req => req.user_id) || []);
+  };
+
+  const fetchDeniedRequests = async () => {
+    const { data, error } = await supabase
+      .from('withdrawal_requests')
+      .select(`
+        *,
+        bank_details (*)
+      `)
+      .eq('status', 'denied')
+      .order('processed_at', { ascending: false });
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch denied withdrawal requests.',
+        variant: 'destructive',
+      });
+      console.error('Error fetching denied requests:', error);
+      return;
+    }
+    setDeniedRequests(data || []);
     fetchProfiles(data?.map(req => req.user_id) || []);
   };
 
@@ -177,73 +228,162 @@ const AdminWallet = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin Wallet - Withdrawal Requests</CardTitle>
-            <CardDescription>Approve or deny pending member withdrawal requests.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pendingRequests.length === 0 ? (
-              <p>No pending withdrawal requests.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Requested At</TableHead>
-                    <TableHead>Bank Details</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingRequests.map((request) => (
-                    <TableRow key={request.id} onClick={() => handleRowClick(request)} className="cursor-pointer hover:bg-gray-100">
-                      <TableCell>{profilesMap[request.user_id]?.first_name} {profilesMap[request.user_id]?.last_name} ({profilesMap[request.user_id]?.email})</TableCell>
-                      <TableCell>${request.amount.toFixed(2)}</TableCell>
-                      <TableCell>{new Date(request.requested_at).toLocaleString()}</TableCell>
-                      <TableCell>
-                        {request.bank_details ? (
-                          <span className="text-blue-600">View Details</span>
-                        ) : (
-                          <span className="text-gray-500">N/A</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent row click from firing
-                            handleApprove(request);
-                          }}
-                          className="mr-2"
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent row click from firing
-                            handleDeny(request);
-                          }}
-                        >
-                          Deny
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <Tabs defaultValue="pending" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="pending">Pending Requests</TabsTrigger>
+            <TabsTrigger value="approved">Approved Requests</TabsTrigger>
+            <TabsTrigger value="denied">Denied Requests</TabsTrigger>
+          </TabsList>
+          <TabsContent value="pending">
+            <Card className="text-center">
+              <CardHeader>
+                <CardTitle>Withdrawal Requests</CardTitle>
+                <CardDescription>Approve or deny pending member withdrawal requests.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingRequests.length === 0 ? (
+                  <p className="text-center">No pending withdrawal requests.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Requested At</TableHead>
+                        <TableHead>Bank Details</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingRequests.map((request) => (
+                        <TableRow key={request.id} onClick={() => handleRowClick(request)} className="cursor-pointer hover:bg-gray-100">
+                          <TableCell>{profilesMap[request.user_id]?.first_name} {profilesMap[request.user_id]?.last_name} ({profilesMap[request.user_id]?.email})</TableCell>
+                          <TableCell>${request.amount.toFixed(2)}</TableCell>
+                          <TableCell>{new Date(request.requested_at).toLocaleString()}</TableCell>
+                          <TableCell>
+                            {request.bank_details ? (
+                              <span className="text-blue-600">View Details</span>
+                            ) : (
+                              <span className="text-gray-500">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent row click from firing
+                                handleApprove(request);
+                              }}
+                              className="mr-2"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent row click from firing
+                                handleDeny(request);
+                              }}
+                            >
+                              Deny
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="approved">
+            <Card className="text-center">
+              <CardHeader>
+                <CardTitle>Approved Withdrawal Requests</CardTitle>
+                <CardDescription>View all approved member withdrawal requests.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {approvedRequests.length === 0 ? (
+                  <p className="text-center">No approved withdrawal requests.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Processed At</TableHead>
+                        <TableHead>Bank Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {approvedRequests.map((request) => (
+                        <TableRow key={request.id} onClick={() => handleRowClick(request)} className="cursor-pointer hover:bg-gray-100">
+                          <TableCell>{profilesMap[request.user_id]?.first_name} {profilesMap[request.user_id]?.last_name} ({profilesMap[request.user_id]?.email})</TableCell>
+                          <TableCell>${request.amount.toFixed(2)}</TableCell>
+                          <TableCell>{request.processed_at ? new Date(request.processed_at).toLocaleString() : 'N/A'}</TableCell>
+                          <TableCell>
+                            {request.bank_details ? (
+                              <span className="text-blue-600">View Details</span>
+                            ) : (
+                              <span className="text-gray-500">N/A</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="denied">
+            <Card className="text-center">
+              <CardHeader>
+                <CardTitle>Denied Withdrawal Requests</CardTitle>
+                <CardDescription>View all denied member withdrawal requests.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {deniedRequests.length === 0 ? (
+                  <p className="text-center">No denied withdrawal requests.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Processed At</TableHead>
+                        <TableHead>Bank Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {deniedRequests.map((request) => (
+                        <TableRow key={request.id} onClick={() => handleRowClick(request)} className="cursor-pointer hover:bg-gray-100">
+                          <TableCell>{profilesMap[request.user_id]?.first_name} {profilesMap[request.user_id]?.last_name} ({profilesMap[request.user_id]?.email})</TableCell>
+                          <TableCell>${request.amount.toFixed(2)}</TableCell>
+                          <TableCell>{request.processed_at ? new Date(request.processed_at).toLocaleString() : 'N/A'}</TableCell>
+                          <TableCell>
+                            {request.bank_details ? (
+                              <span className="text-blue-600">View Details</span>
+                            ) : (
+                              <span className="text-gray-500">N/A</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
           <DialogContent>
-            <DialogHeader>
+            <DialogHeader className="text-center">
               <DialogTitle>Withdrawal Request Details</DialogTitle>
               <DialogDescription>Bank details for the selected withdrawal request.</DialogDescription>
             </DialogHeader>
@@ -273,7 +413,7 @@ const AdminWallet = () => {
                 )}
               </div>
             ) : (
-              <p>No bank details available for this request.</p>
+              <p className="text-center">No bank details available for this request.</p>
             )}
           </DialogContent>
         </Dialog>

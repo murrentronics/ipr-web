@@ -49,6 +49,7 @@ All colors MUST be HSL.
     --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.1);
     --shadow-glow: 0 0 40px hsl(38 92% 50% / 0.25);
+    --gradient-light-blue-to-white: linear-gradient(180deg, hsl(210 100% 95%), hsl(0 0% 100%));
   }
 
   .dark {
@@ -101,5 +102,9 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  .bg-gradient-light-blue-to-white {
+    background: var(--gradient-light-blue-to-white);
   }
 }

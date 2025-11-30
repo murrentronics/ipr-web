@@ -432,14 +432,14 @@ const Dashboard = () => {
         <Tabs defaultValue="groups" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="groups">Groups</TabsTrigger>
-            <TabsTrigger value="contracts">My Contracts</TabsTrigger>
+            <TabsTrigger value="contracts">Contracts</TabsTrigger>
             <TabsTrigger value="payouts">Payout History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contracts">
             <Card>
               <CardHeader>
-                <CardTitle>My Contracts</CardTitle>
+                <CardTitle>Contracts</CardTitle>
                 <CardDescription>View and manage your investment contracts</CardDescription>
               </CardHeader>
               <CardContent>
@@ -526,9 +526,23 @@ const Dashboard = () => {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-semibold">{c.groups?.group_number || 'Group'}</p>
-                              <p className="text-sm text-muted-foreground">
-                                Contracts: {qty} | Monthly Payout: ${monthly.toLocaleString()} | Cycles: {cycles}/60 | Total Collected: ${total.toLocaleString()} | Next Payout: {formatDMY(nextPayout)}
-                              </p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                Contracts: {qty}
+                              </div>
+                              <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                Monthly Payout: ${monthly.toLocaleString()}
+                              </div>
+                              <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                Cycles: {cycles}/60
+                              </div>
+                              <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                Total Collected: ${total.toLocaleString()}
+                              </div>
+                              <div className="p-2 border rounded-md text-xs bg-green-700 text-white">
+                                Next Payout: {formatDMY(nextPayout)}
+                              </div>
+                            </div>
                             </div>
                           </div>
                         </div>

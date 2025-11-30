@@ -56,6 +56,7 @@ const Home = () => {
           </div>
         </div>
       </section>
+      <div className="w-full h-24 bg-gradient-light-blue-to-white"></div>
 
       {/* Features Section */}
       <section className="py-20 bg-muted/30">

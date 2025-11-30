@@ -592,29 +592,34 @@ const Admin = () => {
                             {(() => {
                               const displayStatus = getGroupDisplayStatus(group, activeGroupIds);
                               const badgeVariant = displayStatus === 'Active-Open' ? 'default' : displayStatus === 'Inactive-Locked' ? 'secondary' : 'outline';
-                              return <Badge variant={badgeVariant}>{displayStatus}</Badge>;
+                              return <Badge
+                                variant={badgeVariant}
+                                className={displayStatus === "Inactive-Open" ? "bg-primary text-primary-foreground" : ""}
+                              >
+                                {displayStatus}
+                              </Badge>;
                             })()}
                           </div>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Contracts:</span>
-                              <span className="font-semibold">
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <Card className="p-2 bg-blue-500 text-white text-center">
+                              <p className="text-white">Contracts:</p>
+                              <p className="font-semibold">
                                 {(totalContractsMap[group.id] ?? 0)}/{group.max_members}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Members:</span>
-                              <span className="font-semibold">
+                              </p>
+                            </Card>
+                            <Card className="p-2 bg-blue-500 text-white text-center">
+                              <p className="text-white">Members:</p>
+                              <p className="font-semibold">
                                 {(() => {
                                   const ids = new Set((members || []).map((m:any) => m.profiles?.id).filter(Boolean));
                                   return ids.size;
                                 })()}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Status:</span>
-                              <span className="font-semibold capitalize">{group.status}</span>
-                            </div>
+                              </p>
+                            </Card>
+                            <Card className="p-2 bg-blue-500 text-white text-center">
+                              <p className="text-white">Status:</p>
+                              <p className="font-semibold capitalize">{group.status}</p>
+                            </Card>
                           </div>
                           {/* Show dropdown info if expanded */}
                           {isExpanded && (
@@ -633,16 +638,16 @@ const Admin = () => {
                                               {member.profiles?.first_name || 'Unknown'} {member.profiles?.last_name || ''}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                              Contracts: {Number(member.contracts_requested ?? 1)}
+                                              Contracts: {Number(member.contracts_requested ?? 1)} | Price: ${ (Number(member.contracts_requested ?? 1) * PRICE_PER_CONTRACT).toLocaleString() }
                                             </p>
                                           </div>
-                                          <Badge variant={member.paid ? 'default' : 'outline'}>
+                                          <Badge variant={member.paid ? 'default' : 'destructive'}>
                                             {member.paid ? 'Paid' : 'Pending'}
                                           </Badge>
                                         </div>
                                         {!member.paid && member.profiles?.id && (
                                           <div className="mt-3 flex justify-end">
-                                            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); markMemberPaid(group.id, member.profiles.id); }}>
+                                            <Button size="sm" variant="default" onClick={(e) => { e.stopPropagation(); markMemberPaid(group.id, member.profiles.id); }} className="bg-blue-500 text-white hover:bg-blue-600">
                                               Mark Paid
                                             </Button>
                                           </div>
@@ -732,8 +737,22 @@ const Admin = () => {
                                     </span>
                                     <Badge variant={'default'}>PAID</Badge>
                                   </div>
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    Contracts: {qty} | Monthly Payout: ${monthly.toLocaleString()} | Cycles: {cycles}/60 | Total Collected: ${total.toLocaleString()} | Next Payout: {formatDMY(nextPayout)}
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                      Contracts: {member.contracts_requested}
+                                    </div>
+                                    <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                      Monthly Payout: ${monthly.toLocaleString()}
+                                    </div>
+                                    <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                      Cycles: {cycles}/60
+                                    </div>
+                                    <div className="p-2 border rounded-md text-xs bg-blue-500 text-white">
+                                      Total Collected: ${total.toLocaleString()}
+                                    </div>
+                                    <div className="p-2 border rounded-md text-xs bg-green-700 text-white">
+                                      Next Payout: {formatDMY(nextPayout)}
+                                    </div>
                                   </div>
                                 </div>
                               );
