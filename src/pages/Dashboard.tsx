@@ -9,7 +9,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { User } from "@supabase/supabase-js";
+import { User, PostgrestError, Session } from "@supabase/supabase-js";
 import { Users, DollarSign, FileText, Clock, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -29,6 +29,13 @@ interface Group {
   max_members: number;
 }
 
+interface GroupDetails {
+  group_number: string;
+  status: string;
+  max_members?: number;
+  total_members?: number;
+}
+
 interface Contract {
   id: string;
   contract_number?: string;
@@ -36,12 +43,23 @@ interface Contract {
   status: string;
   group_id: string;
   contracts_requested?: number;
-  groups: {
-    group_number: string;
-    status: string;
-    max_members?: number;
-    total_members?: number;
-  };
+  groups: GroupDetails;
+}
+
+interface PaidRow {
+  group_id: string;
+  updated_at: string;
+  status: string;
+}
+
+interface StatusRow {
+  group_id: string;
+  status: string;
+}
+
+interface UserRole {
+  user_id: string;
+  role: string;
 }
 
 const Dashboard = () => {
@@ -63,8 +81,97 @@ const Dashboard = () => {
   const [activationMap, setActivationMap] = useState<Record<string, Date>>({});
   const [groupCompleteMap, setGroupCompleteMap] = useState<Record<string, boolean>>({});
 
+  const loadUserData = useCallback(async (userId: string) => {
+    try {
+      // Load profile
+      const { data: profileData }: { data: Profile | null } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      setProfile(profileData);
+
+      // Load groups
+      const { data: groupsData }: { data: Group[] | null } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false });
+      setGroups(groupsData || []);
+
+      // Load user's join_requests
+      const { data: contractsData }: { data: Contract[] | null } = await supabase
+        .from('join_requests')
+        .select(`
+          *,
+          groups (
+            group_number,
+            status,
+            max_members,
+            total_members
+          )
+        `)
+        .eq('user_id', userId);
+      setContracts(contractsData || []);
+      const gids: string[] = Array.from(new Set((contractsData || []).map((r: Contract) => r.group_id).filter(Boolean)));
+      if (gids.length) {
+        const { data: paidRows }: { data: PaidRow[] | null } = await supabase
+          .from('join_requests')
+          .select('group_id, updated_at, status')
+          .in('group_id', gids)
+          .eq('status', 'funds_deposited');
+        const actMap: Record<string, Date> = {};
+        (paidRows || []).forEach((r: PaidRow) => {
+          const t = r.updated_at ? new Date(r.updated_at).getTime() : 0;
+          const prev = actMap[r.group_id]?.getTime() || 0;
+          if (t > prev) actMap[r.group_id] = new Date(t);
+        });
+        setActivationMap(actMap);
+
+        const { data: statusRows }: { data: StatusRow[] | null } = await supabase
+          .from('join_requests')
+          .select('group_id, status')
+          .in('group_id', gids);
+        const hasApproved: Record<string, boolean> = {};
+        (statusRows || []).forEach((r: StatusRow) => {
+          if (r.status === 'approved') hasApproved[r.group_id] = true;
+        });
+        const completeMap: Record<string, boolean> = {};
+        (contractsData || []).forEach((r: Contract) => {
+          const g: GroupDetails = r.groups || { group_number: '', status: '' };
+          const total = Number(g.total_members ?? 0);
+          const max = Number(g.max_members ?? 25);
+          if (r.group_id) completeMap[r.group_id] = total >= max && !hasApproved[r.group_id];
+        });
+        setGroupCompleteMap(completeMap);
+      }
+      const counts: Record<string, number> = {};
+      (contractsData || []).forEach((req: Contract) => {
+        if (req.status === 'pending') {
+          const qty = Number(req.contracts_requested ?? 1);
+          counts[req.group_id] = (counts[req.group_id] || 0) + qty;
+        }
+      });
+      setPendingCounts(counts);
+    } catch (error: unknown) {
+      console.error('Error loading dashboard data:', error);
+      let message = "Failed to load dashboard data";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [setProfile, setGroups, setContracts, setActivationMap, setGroupCompleteMap, setPendingCounts, toast, setLoading]);
+
   const checkAuth = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } }: { data: { session: Session | null } } = await supabase.auth.getSession();
 
     if (!session) {
       navigate('/auth');
@@ -72,7 +179,7 @@ const Dashboard = () => {
     }
 
     // Check if user is admin
-    const { data: roleData } = await supabase
+    const { data: roleData }: { data: UserRole | null } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', session.user.id)
@@ -87,7 +194,6 @@ const Dashboard = () => {
 
     setUser(session.user);
     loadUserData(session.user.id);
-    navigate('/');
   }, [navigate, loadUserData]);
 
   useEffect(() => {
@@ -110,91 +216,6 @@ const Dashboard = () => {
     };
   }, [user, loadUserData]);
 
-  const loadUserData = useCallback(async (userId: string) => {
-    try {
-      // Load profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      setProfile(profileData);
-
-      // Load groups
-      const { data: groupsData } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
-      setGroups(groupsData || []);
-
-      // Load user's join_requests
-      const { data: contractsData } = await supabase
-        .from('join_requests')
-        .select(`
-          *,
-          groups (
-            group_number,
-            status,
-            max_members,
-            total_members
-          )
-        `)
-        .eq('user_id', userId);
-      setContracts(contractsData || []);
-      const gids = Array.from(new Set((contractsData || []).map((r: Contract) => r.group_id).filter(Boolean)));
-      if (gids.length) {
-        const { data: paidRows } = await supabase
-          .from('join_requests')
-          .select('group_id, updated_at, status')
-          .in('group_id', gids)
-          .eq('status', 'funds_deposited');
-        const actMap: Record<string, Date> = {};
-        (paidRows || []).forEach((r: { group_id: string; updated_at: string; status: string }) => {
-          const t = r.updated_at ? new Date(r.updated_at).getTime() : 0;
-          const prev = actMap[r.group_id]?.getTime() || 0;
-          if (t > prev) actMap[r.group_id] = new Date(t);
-        });
-        setActivationMap(actMap);
-
-        const { data: statusRows } = await supabase
-          .from('join_requests')
-          .select('group_id, status')
-          .in('group_id', gids);
-        const hasApproved: Record<string, boolean> = {};
-        (statusRows || []).forEach((r: { group_id: string; status: string }) => {
-          if (r.status === 'approved') hasApproved[r.group_id] = true;
-        });
-        const completeMap: Record<string, boolean> = {};
-        (contractsData || []).forEach((r: Contract) => {
-          const g = r.groups || {};
-          const total = Number(g.total_members ?? 0);
-          const max = Number(g.max_members ?? 25);
-          if (r.group_id) completeMap[r.group_id] = total >= max && !hasApproved[r.group_id];
-        });
-        setGroupCompleteMap(completeMap);
-      }
-      const counts: Record<string, number> = {};
-      (contractsData || []).forEach((req: Contract) => {
-        if (req.status === 'pending') {
-          const qty = Number(req.contracts_requested ?? 1);
-          counts[req.group_id] = (counts[req.group_id] || 0) + qty;
-        }
-      });
-      setPendingCounts(counts);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [setProfile, setGroups, setContracts, setActivationMap, setGroupCompleteMap, setPendingCounts, toast, setLoading]);
-
   const requestToJoinGroup = async (groupId: string, requested: number) => {
     if (!user) return;
     try {
@@ -209,13 +230,13 @@ const Dashboard = () => {
 
       if (existing?.id) {
         const currentQty = Number(existing.contracts_requested ?? 1);
-        const { error: updErr } = await supabase
+        const { error: updErr }: { error: PostgrestError | null } = await supabase
           .from('join_requests')
           .update({ contracts_requested: currentQty + requested })
           .eq('id', existing.id);
         if (updErr) throw updErr;
       } else {
-        const { error } = await supabase
+        const { error }: { error: PostgrestError | null } = await supabase
           .from('join_requests')
           .insert({
             user_id: user.id,
@@ -237,12 +258,18 @@ const Dashboard = () => {
         ...prev,
         [groupId]: (prev[groupId] || 0) + requested,
       }));
-    } catch (error: Error) {
-      const message = String(error?.message || '').toLowerCase();
+    } catch (error: PostgrestError | Error | unknown) {
+      let message = "An unknown error occurred.";
+      if (error instanceof Error) {
+        message = error.message;
+      }
       if (
-        message.includes('duplicate key') ||
-        message.includes('unique constraint') ||
-        message.includes('join_requests_group_id_user_id_status_key')
+        (error instanceof PostgrestError && error.message.includes('duplicate key')) ||
+        (error instanceof PostgrestError && error.message.includes('unique constraint')) ||
+        (error instanceof PostgrestError && error.message.includes('join_requests_group_id_user_id_status_key')) ||
+        (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string' && error.message.includes('duplicate key')) ||
+        (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string' && error.message.includes('unique constraint')) ||
+        (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string' && error.message.includes('join_requests_group_id_user_id_status_key'))
       ) {
         toast({
           title: "Updated",
@@ -251,7 +278,7 @@ const Dashboard = () => {
       } else {
         toast({
           title: "Error",
-          description: error.message,
+          description: message,
           variant: "destructive",
         });
       }
@@ -266,7 +293,7 @@ const Dashboard = () => {
     setJoinDialogOpen(true);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): JSX.Element => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       'pending': 'outline',
       'approved': 'secondary',
@@ -383,7 +410,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {contracts.map((contract) => (
+                    {contracts.map((contract: Contract) => (
                       <div
                         key={contract.id}
                         className="flex items-center justify-between p-4 border border-border rounded-lg"
@@ -445,7 +472,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).map((c) => {
+                    {contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).map((c: Contract) => {
                       const qty = Number(c.contracts_requested ?? 1);
                       const start = activationMap[c.group_id] || new Date();
                       const now = new Date();
@@ -487,7 +514,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
               <div className="space-y-4">
-                {groups.map((group) => (
+                {groups.map((group: Group) => (
                   <div
                     key={group.id}
                     className="p-6 border border-border rounded-lg hover:border-primary transition-colors"
