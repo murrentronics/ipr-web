@@ -254,34 +254,17 @@ const Dashboard = () => {
       setJoinDialogOpen(false);
       setSelectedGroup(null);
       setContractsCount(1);
-      setPendingCounts((prev) => ({
-        ...prev,
-        [groupId]: (prev[groupId] || 0) + requested,
-      }));
+
     } catch (error: PostgrestError | Error | unknown) {
       let message = "An unknown error occurred.";
       if (error instanceof Error) {
         message = error.message;
       }
-      if (
-        (error instanceof PostgrestError && error.message.includes('duplicate key')) ||
-        (error instanceof PostgrestError && error.message.includes('unique constraint')) ||
-        (error instanceof PostgrestError && error.message.includes('join_requests_group_id_user_id_status_key')) ||
-        (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string' && error.message.includes('duplicate key')) ||
-        (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string' && error.message.includes('unique constraint')) ||
-        (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string' && error.message.includes('join_requests_group_id_user_id_status_key'))
-      ) {
-        toast({
-          title: "Updated",
-          description: "Your pending request was updated for this group.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }

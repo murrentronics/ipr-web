@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION public.process_monthly_payouts()
 RETURNS VOID
 LANGUAGE plpgsql
+SET search_path = ''
 AS $$
 DECLARE
     payout_amount_per_contract NUMERIC := 1800; -- Corresponds to MONTHLY_PAYOUT_PER_CONTRACT
@@ -21,9 +22,9 @@ BEGIN
     LOOP
         -- Calculate total contracts for the current user
         SELECT SUM(jr.contracts_requested)
-        INTO total_contracts_for_user
+        INTO total_contracts_for_user -- Ensured replacement by adding a comment
         FROM public.join_requests jr
-        WHERE jr.user_id = current_user_id
+        WHERE jr.user_id = current_user_id -- Filter by the current user
           AND jr.status = 'funds_deposited';
 
         -- Calculate total payout for the user
@@ -33,11 +34,11 @@ BEGIN
         INSERT INTO public.wallets (id, balance)
         VALUES (current_user_id, total_payout_for_user)
         ON CONFLICT (id) DO UPDATE
-        SET balance = wallets.balance + EXCLUDED.balance,
+        SET balance = public.wallets.balance + EXCLUDED.balance,
             updated_at = NOW();
 
         -- Record payout in payout_history
-        INSERT INTO public.payout_history (user_id, amount, payout_date)
+        INSERT INTO public.payout_history (user_id, amount, payout_date) 
         VALUES (current_user_id, total_payout_for_user, payout_date);
     END LOOP;
 END;
