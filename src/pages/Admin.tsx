@@ -712,7 +712,7 @@ const Admin = () => {
                               const adjust = now.getDate() < start.getDate() ? 1 : 0;
                               const cycles = Math.max(0, Math.min(60, rawMonths - adjust));
                               const total = monthly * cycles;
-                              const nextPayout = new Date(start.getFullYear(), start.getMonth() + 1, start.getDate());
+                              const nextPayout = new Date(start.getFullYear(), start.getMonth() + 1, 28);
                               return (
                                 <div key={member.profiles?.id || `${gid}-${idx}`} className="p-3 border rounded">
                                   <div className="flex items-center justify-between">
