@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import AdminProfile from "./pages/AdminProfile";
+import { Layout } from "./components/Layout";
 
 const queryClient = new QueryClient();
 
@@ -24,16 +25,16 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route path="/" element={<Layout><Home /></Layout>} />
+          <Route path="/about" element={<Layout><About /></Layout>} />
+          <Route path="/how-it-works" element={<Layout><HowItWorks /></Layout>} />
+          <Route path="/contact" element={<Layout><Contact /></Layout>} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/profile" element={<AdminProfile />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/profile" element={<MemberProfile />} />
+          <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/admin" element={<Layout><Admin /></Layout>} />
+          <Route path="/admin/profile" element={<Layout><AdminProfile /></Layout>} />
+          <Route path="/users" element={<Layout><Users /></Layout>} />
+          <Route path="/profile" element={<Layout><MemberProfile /></Layout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -10,7 +10,9 @@ const MemberProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,10 +26,11 @@ const MemberProfile = () => {
       }
 
       setUserId(session.user.id);
+      setEmail(session.user.email || '');
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, phone')
+        .select('first_name, last_name, phone')
         .eq('id', session.user.id)
         .single();
 
@@ -35,6 +38,7 @@ const MemberProfile = () => {
         toast({ title: 'Error loading profile', description: error.message, variant: 'destructive' });
       } else if (data) {
         setFirstName(data.first_name || '');
+        setLastName(data.last_name || '');
         setPhone(data.phone || '');
       }
       setLoading(false);
@@ -53,7 +57,7 @@ const MemberProfile = () => {
 
     const { error } = await supabase
       .from('profiles')
-      .update({ first_name: firstName, phone: phone })
+      .update({ first_name: firstName, last_name: lastName, phone: phone })
       .eq('id', userId);
 
     if (error) {
@@ -77,6 +81,16 @@ const MemberProfile = () => {
         <CardContent>
           <div className="grid gap-4">
             <div className="grid gap-2">
+              <label htmlFor="email">Email</label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                disabled
+                placeholder="Email"
+              />
+            </div>
+            <div className="grid gap-2">
               <label htmlFor="firstName">First Name</label>
               <Input
                 id="firstName"
@@ -84,6 +98,16 @@ const MemberProfile = () => {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="First Name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="lastName">Last Name</label>
+              <Input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last Name"
               />
             </div>
             <div className="grid gap-2">
