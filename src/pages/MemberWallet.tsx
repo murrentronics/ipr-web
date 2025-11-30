@@ -48,7 +48,7 @@ const MemberWallet = () => {
       .from('wallets')
       .select('balance')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       toast({
@@ -151,7 +151,7 @@ const MemberWallet = () => {
 
             <Tabs defaultValue="request" className="w-full">
               <TabsList className="grid w-full grid-cols-4 mb-4">
-                <TabsTrigger value="request">Request Withdrawal</TabsTrigger>
+                <TabsTrigger value="request">Withdraw</TabsTrigger>
                 <TabsTrigger value="pending">Pending ({pendingRequests.length})</TabsTrigger>
                 <TabsTrigger value="approved">Approved ({approvedRequests.length})</TabsTrigger>
                 <TabsTrigger value="denied">Denied ({deniedRequests.length})</TabsTrigger>

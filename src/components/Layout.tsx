@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield, Users as UsersIcon, User, Wallet } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield, Users as UsersIcon, User, Wallet, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [roleResolved, setRoleResolved] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -88,51 +90,35 @@ export const Layout = ({ children }: LayoutProps) => {
               <span className="font-bold text-xl text-foreground">Investment Property Rentals</span>
             </Link>
 
-            <div className="flex items-center gap-2">
+
+            <div className="hidden md:flex items-center gap-2">
               <Button
                 variant={isActive('/') ? 'default' : 'ghost'}
-                size="sm"
+                size="icon"
                 onClick={() => navigate('/')}
               >
-                <Home className="w-4 h-4 mr-2" />
-                Home
+                <Home className="w-4 h-4" />
               </Button>
               {user && roleResolved && !isAdmin && (
                 <Button
-                  variant={isActive('/dashboard') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Dashboard
+                    variant={isActive('/dashboard') ? 'default' : 'ghost'}
+                    size="icon"
+                    onClick={() => navigate('/dashboard')}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
                 </Button>
               )}
               {(!isAdmin && roleResolved) && (
                 <>
                   <Button
                     variant={isActive('/about') ? 'default' : 'ghost'}
-                    size="sm"
+                    size="icon"
                     onClick={() => navigate('/about')}
                   >
-                    <Info className="w-4 h-4 mr-2" />
-                    About
+                    <Info className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant={isActive('/how-it-works') ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => navigate('/how-it-works')}
-                  >
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    How It Works
-                  </Button>
-                  <Button
-                    variant={isActive('/contact') ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => navigate('/contact')}
-                  >
-                    <Phone className="w-4 h-4 mr-2" />
-                    Contact
-                  </Button>
+
+
                 </>
               )}
 
@@ -158,46 +144,55 @@ export const Layout = ({ children }: LayoutProps) => {
                         Users
                       </Button>
                       <Button
-                        variant={isActive('/admin/profile') ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => navigate('/admin/profile')}
-                      >
-                        <User className="w-4 h-4 mr-2" />
-                        Profile
-                      </Button>
-                      <Button
                         variant={isActive('/admin/wallet') ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => navigate('/admin/wallet')}
                       >
                         <Wallet className="w-4 h-4 mr-2" />
-                        Wallet
+                      </Button>
+                      <Button
+                        variant={isActive('/admin/profile') ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => navigate('/admin/profile')}
+                      >
+                        <User className="w-4 h-4 mr-2" />
                       </Button>
                     </>
                   )}
                   {!isAdmin && (
                     <>
                       <Button
+                        variant={isActive('/wallet') ? 'default' : 'ghost'}
+                        size="icon"
+                        onClick={() => navigate('/wallet')}
+                      >
+                        <Wallet className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant={isActive('/contact') ? 'default' : 'ghost'}
+                        size="icon"
+                        onClick={() => navigate('/contact')}
+                      >
+                        <Phone className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant={isActive('/how-it-works') ? 'default' : 'ghost'}
+                        size="icon"
+                        onClick={() => navigate('/how-it-works')}
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                      </Button>
+                      <Button
                         variant={isActive('/profile') ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => navigate('/profile')}
                       >
                         <User className="w-4 h-4 mr-2" />
-                        Profile
-                      </Button>
-                      <Button
-                        variant={isActive('/wallet') ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => navigate('/wallet')}
-                      >
-                        <Wallet className="w-4 h-4 mr-2" />
-                        Wallet
                       </Button>
                     </>
                   )}
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <Button variant="destructive" size="sm" onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
-                    Logout
                   </Button>
                 </>
               )}
@@ -212,6 +207,151 @@ export const Layout = ({ children }: LayoutProps) => {
                 </Button>
               )}
             </div>
+
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                >
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[250px] sm:w-[300px]">
+                <nav className="flex flex-col gap-4 pt-8">
+                  <Link to="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                      <span className="text-primary-foreground font-bold text-lg">IPR</span>
+                    </div>
+                    <span className="font-bold text-lg text-foreground">Investment Property Rentals</span>
+                  </Link>
+                  <Button
+                    variant={isActive('/') ? 'default' : 'ghost'}
+                    className="justify-start"
+                    onClick={() => { navigate('/'); setIsMobileMenuOpen(false); }}
+                  >
+                    <Home className="w-4 h-4 mr-2" />
+                    Home
+                  </Button>
+                  {user && roleResolved && !isAdmin && (
+                    <Button
+                      variant={isActive('/dashboard') ? 'default' : 'ghost'}
+                      className="justify-start"
+                      onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }}
+                    >
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  )}
+                  {(!isAdmin && roleResolved) && (
+                    <>
+                      <Button
+                        variant={isActive('/about') ? 'default' : 'ghost'}
+                        className="justify-start"
+                        onClick={() => { navigate('/about'); setIsMobileMenuOpen(false); }}
+                      >
+                        <Info className="w-4 h-4 mr-2" />
+                        About
+                      </Button>
+                      <Button
+                        variant={isActive('/how-it-works') ? 'default' : 'ghost'}
+                        className="justify-start"
+                        onClick={() => { navigate('/how-it-works'); setIsMobileMenuOpen(false); }}
+                      >
+                        <HelpCircle className="w-4 h-4 mr-2" />
+                        How It Works
+                      </Button>
+                      <Button
+                        variant={isActive('/contact') ? 'default' : 'ghost'}
+                        className="justify-start"
+                        onClick={() => { navigate('/contact'); setIsMobileMenuOpen(false); }}
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        Contact
+                      </Button>
+                    </>
+                  )}
+                  {user && roleResolved && (
+                    <>
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant={isActive('/admin') ? 'default' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}
+                          >
+                            <Shield className="w-4 h-4 mr-2" />
+                            Admin
+                          </Button>
+                          <Button
+                            variant={isActive('/users') ? 'default' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => { navigate('/users'); setIsMobileMenuOpen(false); }}
+                          >
+                            <UsersIcon className="w-4 h-4 mr-2" />
+                            Users
+                          </Button>
+                          <Button
+                            variant={isActive('/admin/profile') ? 'default' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => { navigate('/admin/profile'); setIsMobileMenuOpen(false); }}
+                          >
+                            <User className="w-4 h-4 mr-2" />
+                            Profile
+                          </Button>
+                          <Button
+                            variant={isActive('/admin/wallet') ? 'default' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => { navigate('/admin/wallet'); setIsMobileMenuOpen(false); }}
+                          >
+                            <Wallet className="w-4 h-4 mr-2" />
+                            Wallet
+                          </Button>
+                        </>
+                      )}
+                      {!isAdmin && (
+                        <>
+                          <Button
+                            variant={isActive('/profile') ? 'default' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => { navigate('/profile'); setIsMobileMenuOpen(false); }}
+                          >
+                            <User className="w-4 h-4 mr-2" />
+                            Profile
+                          </Button>
+                          <Button
+                            variant={isActive('/wallet') ? 'default' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => { navigate('/wallet'); setIsMobileMenuOpen(false); }}
+                          >
+                            <Wallet className="w-4 h-4 mr-2" />
+                            Wallet
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="outline"
+                        className="justify-start"
+                        onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </Button>
+                    </>
+                  )}
+                  {!user && (
+                    <Button
+                      variant="default"
+                      className="justify-start"
+                      onClick={() => { navigate('/auth'); setIsMobileMenuOpen(false); }}
+                    >
+                      Login / Sign Up
+                    </Button>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </nav>

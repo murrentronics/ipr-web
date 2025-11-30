@@ -390,11 +390,11 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="contracts" className="w-full">
+        <Tabs defaultValue="groups" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="groups">Groups</TabsTrigger>
             <TabsTrigger value="contracts">My Contracts</TabsTrigger>
-            <TabsTrigger value="payouts">Active Groups - Payouts History</TabsTrigger>
-            <TabsTrigger value="groups">Available Groups</TabsTrigger>
+            <TabsTrigger value="payouts">Payout History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contracts">
