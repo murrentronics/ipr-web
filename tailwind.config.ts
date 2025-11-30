@@ -12,9 +12,9 @@ export default {
       screens: {
         "2xl": "1400px",
       },
-  plugins: [tailwindcssAnimate],
     },
     extend: {
+  plugins: [tailwindcssAnimate],
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
