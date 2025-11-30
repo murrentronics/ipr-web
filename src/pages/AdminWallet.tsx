@@ -4,7 +4,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Layout } from '@/components/Layout';
+
+interface BankDetails {
+  id: string;
+  user_id: string;
+  bank_name: string;
+  account_number: string;
+  account_holder_name: string;
+  swift_code: string | null;
+  is_primary: boolean;
+}
 
 interface WithdrawalRequest {
   id: string;
@@ -14,12 +25,16 @@ interface WithdrawalRequest {
   requested_at: string;
   processed_at: string | null;
   admin_id: string | null;
+  bank_details_id: string | null;
+  bank_details: BankDetails | null;
 }
 
 const AdminWallet = () => {
   const { toast } = useToast();
   const [pendingRequests, setPendingRequests] = useState<WithdrawalRequest[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState<boolean>(false);
+  const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
 
   useEffect(() => {
     fetchPendingRequests();
@@ -28,7 +43,10 @@ const AdminWallet = () => {
   const fetchPendingRequests = async () => {
     const { data, error } = await supabase
       .from('withdrawal_requests')
-      .select('*')
+      .select(`
+        *,
+        bank_details (*)
+      `)
       .eq('status', 'pending')
       .order('requested_at', { ascending: true });
 
@@ -152,6 +170,11 @@ const AdminWallet = () => {
     fetchPendingRequests(); // Refresh the list
   };
 
+  const handleRowClick = (request: WithdrawalRequest) => {
+    setSelectedRequest(request);
+    setIsDetailsDialogOpen(true);
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
@@ -170,20 +193,31 @@ const AdminWallet = () => {
                     <TableHead>User</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Requested At</TableHead>
+                    <TableHead>Bank Details</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pendingRequests.map((request) => (
-                    <TableRow key={request.id}>
+                    <TableRow key={request.id} onClick={() => handleRowClick(request)} className="cursor-pointer hover:bg-gray-100">
                       <TableCell>{profilesMap[request.user_id]?.first_name} {profilesMap[request.user_id]?.last_name} ({profilesMap[request.user_id]?.email})</TableCell>
                       <TableCell>${request.amount.toFixed(2)}</TableCell>
                       <TableCell>{new Date(request.requested_at).toLocaleString()}</TableCell>
                       <TableCell>
+                        {request.bank_details ? (
+                          <span className="text-blue-600">View Details</span>
+                        ) : (
+                          <span className="text-gray-500">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleApprove(request)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent row click from firing
+                            handleApprove(request);
+                          }}
                           className="mr-2"
                         >
                           Approve
@@ -191,7 +225,10 @@ const AdminWallet = () => {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDeny(request)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent row click from firing
+                            handleDeny(request);
+                          }}
                         >
                           Deny
                         </Button>
@@ -203,6 +240,43 @@ const AdminWallet = () => {
             )}
           </CardContent>
         </Card>
+
+        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Withdrawal Request Details</DialogTitle>
+              <DialogDescription>Bank details for the selected withdrawal request.</DialogDescription>
+            </DialogHeader>
+            {selectedRequest && selectedRequest.bank_details ? (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 items-center gap-4">
+                  <span className="text-sm font-medium">Amount:</span>
+                  <span>${selectedRequest.amount.toFixed(2)}</span>
+                </div>
+                <div className="grid grid-cols-2 items-center gap-4">
+                  <span className="text-sm font-medium">Bank Name:</span>
+                  <span>{selectedRequest.bank_details.bank_name}</span>
+                </div>
+                <div className="grid grid-cols-2 items-center gap-4">
+                  <span className="text-sm font-medium">Account Holder:</span>
+                  <span>{selectedRequest.bank_details.account_holder_name}</span>
+                </div>
+                <div className="grid grid-cols-2 items-center gap-4">
+                  <span className="text-sm font-medium">Account Number:</span>
+                  <span>{selectedRequest.bank_details.account_number}</span>
+                </div>
+                {selectedRequest.bank_details.swift_code && (
+                  <div className="grid grid-cols-2 items-center gap-4">
+                    <span className="text-sm font-medium">SWIFT Code:</span>
+                    <span>{selectedRequest.bank_details.swift_code}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p>No bank details available for this request.</p>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

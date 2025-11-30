@@ -79,7 +79,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -356,7 +356,7 @@ export const Layout = ({ children }: LayoutProps) => {
         </div>
       </nav>
 
-      <main>{children}</main>
+      <main className="flex-grow">{children}</main>
 
       <footer className="border-t border-border bg-card/50 mt-20">
         <div className="container mx-auto px-4 py-8">
