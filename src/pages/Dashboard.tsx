@@ -228,10 +228,26 @@ const Dashboard = () => {
     };
   }, [user, loadUserData]);
 
-  const requestToJoinGroup = async (groupId: string, requested: number) => {
+  const requestToJoinGroup = useCallback(async (groupId: string, requested: number) => {
     if (!user) return;
     try {
       setSubmitting(true);
+      const { data: pendingRequests } = await supabase
+        .from('join_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
+
+      if (pendingRequests && pendingRequests.length > 0) {
+        toast({
+          title: "Request Denied",
+          description: "You have pending join requests. Please wait for them to be approved before submitting new ones.",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+
       const { data: existing } = await supabase
         .from('join_requests')
         .select('id,status,contracts_requested')
@@ -280,7 +296,7 @@ const Dashboard = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [user, toast, loadUserData, setJoinDialogOpen, setSelectedGroup, setContractsCount]);
 
   const openJoinDialog = (group: Group) => {
     setSelectedGroup(group);
