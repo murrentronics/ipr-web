@@ -67,7 +67,7 @@ const Auth = () => {
           data: {
             first_name: signupData.firstName,
             last_name: signupData.lastName,
-            phone: signupData.phone,
+            phone: signupData.phone || null,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -97,7 +97,7 @@ const Auth = () => {
               id: userId,
               first_name: signupData.firstName,
               last_name: signupData.lastName,
-              phone: signupData.phone,
+              phone: signupData.phone || null,
               email: signupData.email,
             });
         }

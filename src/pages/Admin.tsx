@@ -109,7 +109,7 @@ const Admin = () => {
     if (userIds.length) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, phone')
+        .select('id, first_name, last_name, phone, email')
         .in('id', userIds);
       (profiles || []).forEach((p: any) => { localProfilesMap[p.id] = p; });
     }
@@ -364,7 +364,7 @@ const Admin = () => {
     if (userIds.length) {
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, phone')
+        .select('id, first_name, last_name, phone, email')
         .in('id', userIds);
       profiles = profilesData || [];
     }
@@ -734,6 +734,9 @@ const Admin = () => {
                                   <div className="flex items-center justify-between">
                                     <span className="font-semibold">
                                       {member.profiles?.first_name || 'Unknown'} {member.profiles?.last_name || ''}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {member.profiles?.email || ''}
                                     </span>
                                     <Badge variant={'default'}>PAID</Badge>
                                   </div>

@@ -107,7 +107,7 @@ const UserRowCard = ({ profile }: { profile: Profile }) => {
       setTotalPayouts(total);
     };
     load();
-  }, [profile.id, setRows, setGroupActiveMap, setActiveContracts, setTotalPayouts]);
+  }, [profile.id]);
 
   return (
     <div className="border border-border rounded-lg">
@@ -125,23 +125,23 @@ const UserRowCard = ({ profile }: { profile: Profile }) => {
       </div>
       {isOpen && (
         <div className="px-4 pb-4">
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <div className="p-3 border rounded">
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <Card className="p-3 bg-blue-100">
               <p className="text-sm text-muted-foreground">First Name</p>
               <p className="font-semibold">{profile.first_name || '—'}</p>
-            </div>
-            <div className="p-3 border rounded">
+            </Card>
+            <Card className="p-3 bg-blue-100">
               <p className="text-sm text-muted-foreground">Last Name</p>
               <p className="font-semibold">{profile.last_name || '—'}</p>
-            </div>
-            <div className="p-3 border rounded">
+            </Card>
+            <Card className="p-3 bg-blue-100">
               <p className="text-sm text-muted-foreground">Phone</p>
               <p className="font-semibold">{profile.phone || '—'}</p>
-            </div>
-            <div className="p-3 border rounded">
+            </Card>
+            <Card className="p-3 bg-blue-100">
               <p className="text-sm text-muted-foreground">Email</p>
               <p className="font-semibold">{profile.email || '—'}</p>
-            </div>
+            </Card>
           </div>
           <div className="space-y-2">
             <p className="font-semibold">Contracts</p>
@@ -193,7 +193,7 @@ const Users = () => {
 
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, email')
         .order('created_at', { ascending: false });
 
       const filtered = (profilesData || []).filter((p: Profile) => !adminIds.has(p.id));
@@ -242,8 +242,8 @@ const Users = () => {
   }
 
   const filteredProfiles = profiles.filter(profile =>
-    profile.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+    (profile.first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (profile.last_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -251,12 +251,13 @@ const Users = () => {
       <div className="container mx-auto px-4 py-12">
         <Card>
           <CardHeader>
-            <CardTitle>Users</CardTitle>
+            <CardTitle>Users ({filteredProfiles.length})</CardTitle>
             <CardDescription>Admin-only: view profiles and contract summaries</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-4">
               <Input
+                className="bg-blue-900 text-white !placeholder-white"
                 placeholder="Search users by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
