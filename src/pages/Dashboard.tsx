@@ -345,7 +345,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -367,6 +367,20 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1">Paid Inactive</p>
                   <p className="text-2xl font-bold">
                     {contracts.filter(c => c.status === 'funds_deposited' && !groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
+                  </p>
+                </div>
+                <FileText className="w-8 h-8 text-primary opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Unpaid Inactive</p>
+                  <p className="text-2xl font-bold">
+                    {contracts.filter(c => c.status === 'approved').reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
                   </p>
                 </div>
                 <FileText className="w-8 h-8 text-primary opacity-50" />
@@ -409,6 +423,20 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1">Total Investment</p>
                   <p className="text-2xl font-bold">
                     ${contracts.reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <DollarSign className="w-8 h-8 text-accent opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Unpaid Investment</p>
+                  <p className="text-2xl font-bold">
+                    ${contracts.filter(c => c.status === 'approved').reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
                   </p>
                 </div>
                 <DollarSign className="w-8 h-8 text-accent opacity-50" />
