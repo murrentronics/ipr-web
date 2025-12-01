@@ -485,40 +485,42 @@ const Dashboard = () => {
                         className="flex items-center justify-between p-4 border border-border rounded-lg"
                       >
                         <div>
-                          <p className="font-semibold">{contract.contract_number || contract.groups?.group_number}</p>
-                          {contract.status === 'pending' ? (
-                            <p className="text-sm text-muted-foreground">
-                              Group: {contract.groups?.group_number || 'N/A'} | Contracts: {Number(contract.contracts_requested ?? 1)} | Total: ${((Number(contract.contracts_requested ?? 1)) * PRICE_PER_CONTRACT).toLocaleString()}
-                            </p>
-                          ) : contract.status === 'approved' || contract.status === 'funds_deposited' ? (
-                            <p className="text-sm text-muted-foreground">
-                              Group: {contract.groups?.group_number || 'N/A'} | Contracts: {Number(contract.contracts_requested ?? 1)} | Total: ${((Number(contract.contracts_requested ?? 1)) * PRICE_PER_CONTRACT).toLocaleString()}
-                            </p>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              Group: {contract.groups?.group_number || 'N/A'} | Amount: ${Number(contract.amount ?? 0).toLocaleString()}
-                            </p>
-                          )}
+
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <Badge className="bg-sky-500 text-white">Group: {contract.groups?.group_number || 'N/A'}</Badge>
+                            <Badge className="bg-sky-500 text-white">Contracts: {Number(contract.contracts_requested ?? 1)}</Badge>
+                            <Badge className="bg-sky-500 text-white">Total: ${((Number(contract.contracts_requested ?? 1)) * PRICE_PER_CONTRACT).toLocaleString()}</Badge>
+                          </div>
                         </div>
                         {(() => {
                           const status = (contract.status || '').toLowerCase();
                           let label = '';
                           let variant: "default" | "secondary" | "destructive" | "outline" = 'default';
+                          let textColorClass = 'text-white'; // Default text color for status badges
+
                           if (status === 'funds_deposited') {
                             const complete = groupCompleteMap[contract.group_id];
                             label = complete ? 'PAID-active' : 'PAID-inactive';
                             variant = 'default';
+                            textColorClass = 'text-white';
                           } else if (status === 'approved') {
-                            label = 'Pending payment';
-                            variant = 'outline';
+                            label = 'UNPAID-inactive';
+                            variant = 'default';
+                            textColorClass = 'text-white';
+                            // Add custom background color for red
+                            return <Badge className="bg-red-500 text-white">{label}</Badge>;
                           } else if (status === 'pending') {
                             label = 'PENDING';
-                            variant = 'outline';
+                            variant = 'default';
+                            textColorClass = 'text-white';
+                            // Add custom background color for orange
+                            return <Badge className="bg-orange-500 text-white">{label}</Badge>;
                           } else {
                             label = (contract.status || '').replace(/_/g, ' ').toUpperCase();
                             variant = 'secondary';
+                            textColorClass = 'text-white';
                           }
-                          return <Badge variant={variant}>{label}</Badge>;
+                          return <Badge variant={variant} className={textColorClass}>{label}</Badge>;
                         })()}
                       </div>
                     ))}

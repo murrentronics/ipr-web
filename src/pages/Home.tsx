@@ -45,7 +45,7 @@ const Home = () => {
             </p>
             { !isAdmin && (
               <div className="flex gap-4 justify-center">
-                <Button size="lg" onClick={() => navigate('/auth')} className="shadow-lg">
+                <Button size="lg" onClick={() => navigate('/auth')} className="shadow-lg bg-primary text-primary-foreground hover:bg-primary/90">
                   Get Started Today
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => navigate('/how-it-works')}>

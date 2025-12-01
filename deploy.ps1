@@ -2,10 +2,10 @@
 
 # Define variables for easier modification
 $projectDir = "C:\Users\Trecia\IPR-Web\ipr-web"
-$remoteUser = "u2403-i05uh5edcfpj"
-$remoteHost = "ssh.theronm21.sg-host.com"
+$remoteUser = "u2434-z1xcpwxs0vtm"
+$remoteHost = "ssh.theronm22.sg-host.com"
 $remotePort = "18765"
-$remotePath = "/home/u2403-i05uh5edcfpj/public_html/"
+$remotePath = "/home/u2434-z1xcpwxs0vtm/public_html/"
 
 Write-Host "Starting deployment process..."
 
@@ -23,18 +23,25 @@ if (-not (Test-Path "$projectDir\dist")) {
     exit 1
 }
 
-# 3. Clean up remote www directory before transferring new files
-Write-Host "Cleaning up remote www directory..."
-ssh -p $remotePort "${remoteUser}@${remoteHost}" "rm -rf ${remotePath}*"
+Write-Host "Ensuring remote public_html directory exists..."
+ssh -p $remotePort "${remoteUser}@${remoteHost}" "mkdir -p ${remotePath}"
 
-# 4. Run the scp command to transfer files
-Write-Host "Transferring files to SiteGround via scp..."
-# Note: scp will prompt for password if not using SSH keys with agent
-scp -P $remotePort -r "${projectDir}\dist\." "${remoteUser}@${remoteHost}:${remotePath}"
+# 3. Clean up remote public_html directory before transferring new files
+Write-Host "Cleaning up remote public_html directory contents..."
+ssh -p $remotePort "${remoteUser}@${remoteHost}" "rm -rf ${remotePath}/*"
+
+# 4. Run the scp commands to transfer files
+Write-Host "Transferring index.html to SiteGround via scp..."
+scp -P $remotePort "${projectDir}\dist\index.html" "${remoteUser}@${remoteHost}:${remotePath}index.html"
+Write-Host "index.html transferred."
+
+Write-Host "Transferring assets directory to SiteGround via scp..."
+scp -P $remotePort -r "${projectDir}\dist\assets" "${remoteUser}@${remoteHost}:${remotePath}assets"
 
 # Transfer .htaccess file
 Write-Host "Transferring .htaccess file to SiteGround via scp..."
 scp -P $remotePort "${projectDir}\.htaccess" "${remoteUser}@${remoteHost}:${remotePath}.htaccess"
+Write-Host ".htaccess file transferred."
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Deployment completed successfully!"
