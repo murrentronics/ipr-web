@@ -5,7 +5,7 @@ $projectDir = "C:\Users\Trecia\IPR-Web\ipr-web"
 $remoteUser = "u2434-z1xcpwxs0vtm"
 $remoteHost = "ssh.theronm22.sg-host.com"
 $remotePort = "18765"
-$remotePath = "public_html/"
+$remotePath = "/home/u2434-z1xcpwxs0vtm/public_html/"
 
 Write-Host "Starting deployment process..."
 
@@ -47,6 +47,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "index.html transferred."
 
+Write-Host "Transferring test.html to SiteGround via scp..."
+scp -P $remotePort "${projectDir}\test.html" "${remoteUser}@${remoteHost}:${remotePath}test.html"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to transfer test.html. SCP exit code: $LASTEXITCODE"
+    exit 1
+}
+Write-Host "test.html transferred."
+
 Write-Host "Transferring assets directory to SiteGround via scp..."
 scp -P $remotePort -r "${projectDir}\dist\assets" "${remoteUser}@${remoteHost}:${remotePath}assets"
 if ($LASTEXITCODE -ne 0) {
@@ -55,13 +63,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Assets directory transferred."
 
-# Transfer .htaccess file
-Write-Host "Transferring .htaccess file to SiteGround via scp..."
-scp -P $remotePort "${projectDir}\.htaccess" "${remoteUser}@${remoteHost}:${remotePath}.htaccess"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to transfer .htaccess file. SCP exit code: $LASTEXITCODE"
-    exit 1
-}
-Write-Host ".htaccess file transferred."
+# .htaccess file transfer temporarily removed to resolve deployment issues.
 
 Write-Host "Deployment completed successfully!"
