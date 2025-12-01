@@ -63,6 +63,13 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Assets directory transferred."
 
-# .htaccess file transfer temporarily removed to resolve deployment issues.
+# Transfer .htaccess file
+Write-Host "Transferring .htaccess file to SiteGround via scp..."
+scp -P $remotePort "${projectDir}\.htaccess" "${remoteUser}@${remoteHost}:${remotePath}.htaccess"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to transfer .htaccess file. SCP exit code: $LASTEXITCODE"
+    exit 1
+}
+Write-Host ".htaccess file transferred."
 
 Write-Host "Deployment completed successfully!"
