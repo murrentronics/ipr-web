@@ -235,14 +235,15 @@ const Dashboard = () => {
       setSubmitting(true);
       const { data: pendingRequests } = await supabase
         .from('join_requests')
-        .select('id')
+        .select('id,status,contracts_requested')
         .eq('user_id', user.id)
+        .eq('group_id', groupId)
         .eq('status', 'pending');
 
       if (pendingRequests && pendingRequests.length > 0) {
         toast({
           title: "Request Denied",
-          description: "You have pending join requests. Please wait for them to be approved before submitting new ones.",
+          description: "You have pending join requests for this group. Please wait for them to be approved before submitting new ones.",
           variant: "destructive",
         });
         setSubmitting(false);

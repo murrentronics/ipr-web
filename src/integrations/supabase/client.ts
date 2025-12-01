@@ -10,4 +10,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     detectSessionInUrl: true,
     storage: window.localStorage,
   },
+  global: {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+    },
+  },
 });

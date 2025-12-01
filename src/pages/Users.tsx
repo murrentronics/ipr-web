@@ -244,7 +244,18 @@ const Users = () => {
   const filteredProfiles = profiles.filter(profile =>
     (profile.first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (profile.last_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => {
+    const firstNameA = (a.first_name || '').toLowerCase();
+    const firstNameB = (b.first_name || '').toLowerCase();
+    const lastNameA = (a.last_name || '').toLowerCase();
+    const lastNameB = (b.last_name || '').toLowerCase();
+
+    if (firstNameA < firstNameB) return -1;
+    if (firstNameA > firstNameB) return 1;
+    if (lastNameA < lastNameB) return -1;
+    if (lastNameA > lastNameB) return 1;
+    return 0;
+  });
 
   return (
     <Layout>
