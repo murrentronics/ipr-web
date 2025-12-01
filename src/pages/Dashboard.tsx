@@ -116,15 +116,16 @@ const Dashboard = () => {
         .eq('user_id', userId);
 
       const processedContractsData = (contractsData || []).map(contract => {
-        const contractsRequested = Number(contract.contracts_requested ?? 0);
-        return {
-          ...contract,
-          contracts_requested: contractsRequested,
-          amount: contractsRequested * PRICE_PER_CONTRACT,
-          monthly_payout: contractsRequested * MONTHLY_PAYOUT_PER_CONTRACT,
-        };
-      });
-      setContracts(processedContractsData);
+         const contractsRequested = Number(contract.contracts_requested ?? 0);
+         return {
+           ...contract,
+           contracts_requested: contractsRequested,
+           amount: contractsRequested * PRICE_PER_CONTRACT,
+           monthly_payout: contractsRequested * MONTHLY_PAYOUT_PER_CONTRACT,
+           group_number_int: parseInt((contract.groups?.group_number || 'IPR00000').replace('IPR', ''), 10) || 0,
+         };
+       }).sort((a, b) => b.group_number_int - a.group_number_int);
+       setContracts(processedContractsData);
 
       const gids: string[] = Array.from(new Set((contractsData || []).map((r: Contract) => r.group_id).filter(Boolean)));
       if (gids.length) {
