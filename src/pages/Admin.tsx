@@ -696,6 +696,7 @@ const Admin = () => {
                     placeholder="Search by group number..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-blue-900 text-white placeholder:text-white"
                   />
                 </div>
                 <div className="space-y-4">
@@ -734,9 +735,6 @@ const Admin = () => {
                                   <div className="flex items-center justify-between">
                                     <span className="font-semibold">
                                       {member.profiles?.first_name || 'Unknown'} {member.profiles?.last_name || ''}
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                      {member.profiles?.email || ''}
                                     </span>
                                     <Badge variant={'default'}>PAID</Badge>
                                   </div>
