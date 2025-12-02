@@ -14,8 +14,13 @@ Write-Host "Navigating to project directory: $projectDir"
 Set-Location $projectDir
 
 # 2. Run the build command
-Write-Host "Running cmd.exe /c npm run build..."
-npm run build
+Write-Host "Running npm run build..."
+$buildResult = cmd.exe /c npm run build 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "NPM build failed. Output: $buildResult"
+    exit 1
+}
+Write-Host "NPM build completed successfully."
 
 # Check if the build was successful and dist directory exists
 if (-not (Test-Path "$projectDir\dist")) {
