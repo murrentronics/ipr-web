@@ -37,10 +37,17 @@ const Home = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
               Build Your Passive Income Through{" "}
-              <span className="text-primary">Real Estate Investment <img src="/images/trinidad-tobago-flag.png" alt="Trinidad & Tobago Flag" className="inline-block w-6 h-4 ml-2" /></span>
+              <span className="text-primary">
+                Real Estate Investment
+                <img
+                  src="/images/trinidad-tobago-flag.svg"
+                  alt="Trinidad & Tobago flag"
+                  className="inline-block w-10 h-6 ml-3 -mt-1 align-middle"
+                />
+              </span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Join closed membership investment groups and generate $1,800/month for 60 months. 
+              Join closed membership investment groups in Trinidad & Tobago and generate $1,800/month for 60 months.
               Perfect for first-time investors and stay-at-home moms.
             </p>
             { !isAdmin && (
