@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield, Users as UsersIcon, User, Wallet, Menu } from "lucide-react";
+import { Home, Info, HelpCircle, Phone, LogOut, LayoutDashboard, Shield, Users as UsersIcon, User, Wallet, Menu, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [roleResolved, setRoleResolved] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -42,6 +43,36 @@ export const Layout = ({ children }: LayoutProps) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    let isMounted = true;
+    const loadUnread = async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      if (!error && isMounted) setUnreadCount((data || []).length);
+    };
+    loadUnread();
+
+    const channel = supabase
+      .channel('user-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `user_id=eq.${user?.id}` }, (payload) => {
+        // refresh unread count when messages for this user change
+        loadUnread();
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const checkAdminStatus = async (userId: string) => {
     const { data, error } = await supabase
@@ -99,6 +130,22 @@ export const Layout = ({ children }: LayoutProps) => {
               >
                 <Home className="w-4 h-4" />
               </Button>
+              {/* Notification bell - desktop only */}
+              {user && (
+                <Button
+                  variant={isActive('/messages') ? 'default' : 'ghost'}
+                  size="icon"
+                  onClick={() => navigate('/messages')}
+                  className="relative"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              )}
               {user && roleResolved && !isAdmin && (
                 <Button
                     variant={isActive('/dashboard') ? 'default' : 'ghost'}

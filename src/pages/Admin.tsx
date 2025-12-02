@@ -380,6 +380,93 @@ const Admin = () => {
     setLoadingMembersMap((prev) => ({ ...prev, [groupId]: false }));
   };
 
+  // Send push notification to all members of a group informing them of deposit deadline
+  const sendPushNotificationForGroup = async (groupId: string) => {
+    try {
+      // Fetch members (approved or funds_deposited)
+      const { data: members } = await supabase
+        .from('join_requests')
+        .select('user_id')
+        .eq('group_id', groupId)
+        .in('status', ['approved','funds_deposited']);
+
+      if (!members || members.length === 0) {
+        toast({ title: 'No members', description: 'No members to notify for this group.', variant: 'destructive' });
+        return;
+      }
+
+      const sendDate = new Date();
+      const deadline = new Date(sendDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const dStr = `${String(deadline.getDate()).padStart(2,'0')}/${String(deadline.getMonth()+1).padStart(2,'0')}/${deadline.getFullYear()}`;
+      const { data: groupInfo } = await supabase.from('groups').select('group_number').eq('id', groupId).maybeSingle();
+      const groupNumber = groupInfo?.group_number || 'your group';
+
+      const messages = (members || []).map((m: any) => ({
+        user_id: m.user_id,
+        title: `Group ${groupNumber} Locked - Deposit Reminder`,
+        body: `Your group ${groupNumber} is locked. You have until ${dStr} to visit our office and deposit your investment total.`,
+        is_read: false,
+      }));
+
+      const { error } = await supabase.from('messages').insert(messages);
+      if (error) throw error;
+      toast({ title: 'Notifications Sent', description: `Push notifications sent to ${messages.length} member(s).` });
+    } catch (e: any) {
+      toast({ title: 'Failed', description: e.message || 'Failed to send notifications', variant: 'destructive' });
+    }
+  };
+
+  // Open push modal with prefilled message
+  const [pushModalOpen, setPushModalOpen] = useState(false);
+  const [pushGroupId, setPushGroupId] = useState<string | null>(null);
+  const [pushTitle, setPushTitle] = useState<string>('');
+  const [pushBody, setPushBody] = useState<string>('');
+
+  const openPushModal = async (groupId: string) => {
+    const { data: groupInfo } = await supabase.from('groups').select('group_number').eq('id', groupId).maybeSingle();
+    const groupNumber = groupInfo?.group_number || 'your group';
+    const sendDate = new Date();
+    const deadline = new Date(sendDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const dStr = `${String(deadline.getDate()).padStart(2,'0')}/${String(deadline.getMonth()+1).padStart(2,'0')}/${deadline.getFullYear()}`;
+    setPushGroupId(groupId);
+    setPushTitle(`Group ${groupNumber} Locked - Deposit Reminder`);
+    setPushBody(`Your group ${groupNumber} is locked. You have until ${dStr} to visit our office and deposit your investment total.`);
+    setPushModalOpen(true);
+  };
+
+  const sendPushNotification = async () => {
+    if (!pushGroupId) return;
+    try {
+      const { data: members } = await supabase
+        .from('join_requests')
+        .select('user_id')
+        .eq('group_id', pushGroupId)
+        .in('status', ['approved','funds_deposited']);
+
+      if (!members || members.length === 0) {
+        toast({ title: 'No members', description: 'No members to notify for this group.', variant: 'destructive' });
+        return;
+      }
+
+      const messages = (members || []).map((m: any) => ({
+        user_id: m.user_id,
+        title: pushTitle,
+        body: pushBody,
+        is_read: false,
+      }));
+
+      const { error } = await supabase.from('messages').insert(messages);
+      if (error) throw error;
+      toast({ title: 'Notifications Sent', description: `Push notifications sent to ${messages.length} member(s).` });
+      setPushModalOpen(false);
+      setPushGroupId(null);
+      setPushTitle('');
+      setPushBody('');
+    } catch (e: any) {
+      toast({ title: 'Failed', description: e.message || 'Failed to send notifications', variant: 'destructive' });
+    }
+  };
+
   const markMemberPaid = async (groupId: string, userId: string) => {
     const { data: approvedRow } = await supabase
       .from('join_requests')
@@ -579,6 +666,8 @@ const Admin = () => {
                     const isExpanded = expandedGroups[group.id] || false;
                     const members = groupMembersMap[group.id] || [];
                     const isLoadingMembers = loadingMembersMap[group.id] || false;
+                    const displayStatus = getGroupDisplayStatus(group, activeGroupIds);
+                    const badgeVariant = displayStatus === 'Active-Open' ? 'default' : displayStatus === 'Inactive-Locked' ? 'secondary' : 'outline';
 
                     return (
                       <div
@@ -589,16 +678,20 @@ const Admin = () => {
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold">{group.group_number}</h3>
-                            {(() => {
-                              const displayStatus = getGroupDisplayStatus(group, activeGroupIds);
-                              const badgeVariant = displayStatus === 'Active-Open' ? 'default' : displayStatus === 'Inactive-Locked' ? 'secondary' : 'outline';
-                              return <Badge
+                            <div className="flex items-center gap-2">
+                              {group.status === 'locked' && (
+                                <Button size="sm" onClick={(e) => { e.stopPropagation(); sendPushNotificationForGroup(group.id); }} className="bg-red-600 text-white hover:bg-red-700">
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Push Payment Notification
+                                </Button>
+                              )}
+                              <Badge
                                 variant={badgeVariant}
                                 className={displayStatus === "Inactive-Open" ? "bg-primary text-primary-foreground" : ""}
                               >
                                 {displayStatus}
-                              </Badge>;
-                            })()}
+                              </Badge>
+                            </div>
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-sm">
                             <Card className="p-2 bg-blue-500 text-white text-center">
