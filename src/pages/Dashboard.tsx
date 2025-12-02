@@ -542,7 +542,7 @@ const Dashboard = () => {
 
           <TabsContent value="payouts">
             <Card>
-              <CardHeader>
+              <CardHeader className="text-center">
                 <CardTitle>Active Groups - Payouts History</CardTitle>
                 <CardDescription>Monthly payouts over 60 months</CardDescription>
               </CardHeader>
