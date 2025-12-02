@@ -37,7 +37,7 @@ const Home = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
               Build Your Passive Income Through{" "}
-              <span className="text-primary">Real Estate Investment</span>
+              <span className="text-primary">Real Estate Investment <img src="/images/trinidad-tobago-flag.png" alt="Trinidad & Tobago Flag" className="inline-block w-6 h-4 ml-2" /></span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Join closed membership investment groups and generate $1,800/month for 60 months. 
@@ -177,7 +177,7 @@ const Home = () => {
               Ready to Start Your Investment Journey?
             </h2>
             <p className="text-xl text-primary-foreground/90 mb-8">
-              Join thousands of investors already earning passive income through IPR
+              Join other Trinbagonians already earning passive income through IPR
             </p>
             {isLoggedIn ? (
               <Button 
