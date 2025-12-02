@@ -38,38 +38,24 @@ if ($LASTEXITCODE -ne 0) {
 
 # 3. Clean up remote public_html directory before transferring new files
 Write-Host "Cleaning up remote public_html directory contents..."
-ssh -v -p $remotePort "${remoteUser}@${remoteHost}" "rm -rf ${remotePath}/*"
+ssh -v -p $remotePort "${remoteUser}@${remoteHost}" "rm -f ${remotePath}/.htaccess && rm -rf ${remotePath}/*"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to clean up remote public_html directory. SSH exit code: $LASTEXITCODE"
     exit 1
 }
 
 # 4. Run the scp commands to transfer files
-Write-Host "Transferring index.html to SiteGround via scp..."
-scp -P $remotePort "${projectDir}\dist\index.html" "${remoteUser}@${remoteHost}:${remotePath}index.html"
+
+
+
+Write-Host "Transferring all dist folder contents to SiteGround via scp..."
+scp -P $remotePort -r "${projectDir}\dist\*" "${remoteUser}@${remoteHost}:${remotePath}"
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to transfer index.html. SCP exit code: $LASTEXITCODE"
+    Write-Error "Failed to transfer dist folder contents. SCP exit code: $LASTEXITCODE"
     exit 1
 }
-Write-Host "index.html transferred."
+Write-Host "All dist folder contents transferred successfully."
 
-Write-Host "Transferring test.html to SiteGround via scp..."
-scp -P $remotePort "${projectDir}\test.html" "${remoteUser}@${remoteHost}:${remotePath}test.html"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to transfer test.html. SCP exit code: $LASTEXITCODE"
-    exit 1
-}
-Write-Host "test.html transferred."
-
-Write-Host "Transferring assets directory to SiteGround via scp..."
-scp -P $remotePort -r "${projectDir}\dist\assets" "${remoteUser}@${remoteHost}:${remotePath}assets"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to transfer assets directory. SCP exit code: $LASTEXITCODE"
-    exit 1
-}
-Write-Host "Assets directory transferred."
-
-# Transfer .htaccess file
 Write-Host "Transferring .htaccess file to SiteGround via scp..."
 scp -P $remotePort "${projectDir}\.htaccess" "${remoteUser}@${remoteHost}:${remotePath}.htaccess"
 if ($LASTEXITCODE -ne 0) {
