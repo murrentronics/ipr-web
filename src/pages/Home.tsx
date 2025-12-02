@@ -66,49 +66,58 @@ const Home = () => {
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="border-border shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                   <Building2 className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Real Property</h3>
                 <p className="text-muted-foreground">
-                  Invest in actual rental properties built with your group's pooled funds.
+                  Invest in actual rental properties with your group's pooled funds.
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-border shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                   <TrendingUp className="w-6 h-6 text-accent" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Fixed Returns</h3>
                 <p className="text-muted-foreground">
-                  Guaranteed $1,800 monthly income for 5 years from rental proceeds.
+                  Guaranteed $1,800 monthly income for 5 years from rental proceeds per contract.
+                </p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  e.g. 2 contracts = $3600 per month
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-border shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                   <Users className="w-6 h-6 text-success" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Group Investment</h3>
                 <p className="text-muted-foreground">
                   Join exclusive 25-member investment groups with other investors.
                 </p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Only 25 contracts allowed per group so amount of members per group depends on number of contracts a member bought.
+                </p>
               </CardContent>
             </Card>
 
             <Card className="border-border shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                   <Shield className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Secure Process</h3>
                 <p className="text-muted-foreground">
                   Transparent approval process and professionally managed properties.
+                </p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  All deposits are done in-office and withdraws to your bank account or in-office also.
                 </p>
               </CardContent>
             </Card>
