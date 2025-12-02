@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { User, PostgrestError, Session } from "@supabase/supabase-js";
-import { Users, DollarSign, FileText, Clock, TrendingUp } from "lucide-react";
+import { Users, DollarSign, FileText, Clock, TrendingUp, Check, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Profile {
@@ -353,12 +353,12 @@ const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Paid Active</p>
+                    <p className="text-sm text-muted-foreground mb-1">Active</p>
                     <p className="text-2xl font-bold">
                       {contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.amount ?? 0), 0) / 10000}
                     </p>
                   </div>
-                  <FileText className="w-8 h-8 text-primary opacity-50" />
+                  <Check className="w-12 h-12 text-green-500 opacity-50" />
                 </div>
               </CardContent>
             </Card>
@@ -367,12 +367,12 @@ const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Paid Inactive</p>
+                    <p className="text-sm text-muted-foreground mb-1">Inactive</p>
                     <p className="text-2xl font-bold">
                       {contracts.filter(c => c.status === 'funds_deposited' && !groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
                     </p>
                   </div>
-                  <FileText className="w-8 h-8 text-primary opacity-50" />
+                  <Check className="w-12 h-12 text-red-500 opacity-50" />
                 </div>
               </CardContent>
             </Card>
@@ -381,12 +381,12 @@ const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Unpaid Inactive</p>
+                    <p className="text-sm text-muted-foreground mb-1">Unpaid</p>
                     <p className="text-2xl font-bold">
                       {contracts.filter(c => c.status === 'approved').reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
                     </p>
                   </div>
-                  <FileText className="w-8 h-8 text-primary opacity-50" />
+                  <Clock className="w-8 h-8 text-green-500 opacity-50" />
                 </div>
               </CardContent>
             </Card>
@@ -395,12 +395,12 @@ const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Pending Approval</p>
+                    <p className="text-sm text-muted-foreground mb-1">Pending</p>
                     <p className="text-2xl font-bold">
                       {contracts.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
                     </p>
                   </div>
-                  <Clock className="w-8 h-8 text-success opacity-50" />
+                  <Clock className="w-8 h-8 text-red-500 opacity-50" />
                 </div>
               </CardContent>
             </Card>
@@ -409,7 +409,7 @@ const Dashboard = () => {
 
         {/* Investment and Return Row */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 text-blue-600">Investment and Return</h2>
+          <h2 className="text-xl font-bold mb-4 text-blue-600">Investment and Monthly Return</h2>
           <div className="grid md:grid-cols-4 gap-6">
             <Card>
               <CardContent className="p-6">
@@ -457,7 +457,7 @@ const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Monthly Income</p>
+                    <p className="text-sm text-muted-foreground mb-1">Return</p>
                     <p className="text-2xl font-bold">
                       ${contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.monthly_payout ?? 0), 0).toLocaleString()}
                     </p>
@@ -510,7 +510,7 @@ const Dashboard = () => {
 
                           if (status === 'funds_deposited') {
                             const complete = groupCompleteMap[contract.group_id];
-                            label = complete ? 'PAID-active' : 'PAID-inactive';
+                            label = complete ? 'PAID-active' : 'INACTIVE';
                             variant = 'default';
                             textColorClass = 'text-white';
                           } else if (status === 'approved') {
