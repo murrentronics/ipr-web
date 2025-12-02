@@ -1,4 +1,5 @@
 Set-StrictMode -Version Latest
+Set-Alias npm npm.cmd
 
 # Define variables for easier modification
 $projectDir = "C:\Users\Trecia\IPR-Web\ipr-web"
@@ -15,9 +16,9 @@ Set-Location $projectDir
 
 # 2. Run the build command
 Write-Host "Running npm run build..."
-$buildResult = cmd.exe /c npm run build 2>&1
+npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "NPM build failed. Output: $buildResult"
+    Write-Error "NPM build failed. Aborting deployment."
     exit 1
 }
 Write-Host "NPM build completed successfully."
