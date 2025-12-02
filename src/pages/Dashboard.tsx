@@ -345,118 +345,128 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Paid Active</p>
-                  <p className="text-2xl font-bold">
-                    {contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.amount ?? 0), 0) / 10000}
-                  </p>
+        {/* Contract Stats Row */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold mb-4 text-blue-600">Contract Status</h2>
+          <div className="grid md:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Paid Active</p>
+                    <p className="text-2xl font-bold">
+                      {contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.amount ?? 0), 0) / 10000}
+                    </p>
+                  </div>
+                  <FileText className="w-8 h-8 text-primary opacity-50" />
                 </div>
-                <FileText className="w-8 h-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Paid Inactive</p>
-                  <p className="text-2xl font-bold">
-                    {contracts.filter(c => c.status === 'funds_deposited' && !groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
-                  </p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Paid Inactive</p>
+                    <p className="text-2xl font-bold">
+                      {contracts.filter(c => c.status === 'funds_deposited' && !groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
+                    </p>
+                  </div>
+                  <FileText className="w-8 h-8 text-primary opacity-50" />
                 </div>
-                <FileText className="w-8 h-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Unpaid Inactive</p>
-                  <p className="text-2xl font-bold">
-                    {contracts.filter(c => c.status === 'approved').reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
-                  </p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Unpaid Inactive</p>
+                    <p className="text-2xl font-bold">
+                      {contracts.filter(c => c.status === 'approved').reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
+                    </p>
+                  </div>
+                  <FileText className="w-8 h-8 text-primary opacity-50" />
                 </div>
-                <FileText className="w-8 h-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Pending Approval</p>
-                  <p className="text-2xl font-bold">
-                    {contracts.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
-                  </p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Pending Approval</p>
+                    <p className="text-2xl font-bold">
+                      {contracts.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.contracts_requested ?? 0), 0)}
+                    </p>
+                  </div>
+                  <Clock className="w-8 h-8 text-success opacity-50" />
                 </div>
-                <Clock className="w-8 h-8 text-success opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Active Investment</p>
-                  <p className="text-2xl font-bold">
-                    ${contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
-                  </p>
+        {/* Investment and Return Row */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 text-blue-600">Investment and Return</h2>
+          <div className="grid md:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Active</p>
+                    <p className="text-2xl font-bold">
+                      ${contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-accent opacity-50" />
                 </div>
-                <DollarSign className="w-8 h-8 text-accent opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Investment</p>
-                  <p className="text-2xl font-bold">
-                    ${contracts.reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
-                  </p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Total</p>
+                    <p className="text-2xl font-bold">
+                      ${contracts.reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-accent opacity-50" />
                 </div>
-                <DollarSign className="w-8 h-8 text-accent opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Unpaid Investment</p>
-                  <p className="text-2xl font-bold">
-                    ${contracts.filter(c => c.status === 'approved').reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
-                  </p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Unpaid</p>
+                    <p className="text-2xl font-bold">
+                      ${contracts.filter(c => c.status === 'approved').reduce((sum, c) => sum + Number(c.amount ?? 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-accent opacity-50" />
                 </div>
-                <DollarSign className="w-8 h-8 text-accent opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Monthly Income</p>
-                  <p className="text-2xl font-bold">
-                    ${contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.monthly_payout ?? 0), 0).toLocaleString()}
-                  </p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Monthly Income</p>
+                    <p className="text-2xl font-bold">
+                      ${contracts.filter(c => c.status === 'funds_deposited' && groupCompleteMap[c.group_id]).reduce((sum, c) => sum + Number(c.monthly_payout ?? 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-primary opacity-50" />
                 </div>
-                <TrendingUp className="w-8 h-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <Tabs defaultValue="groups" className="w-full">
