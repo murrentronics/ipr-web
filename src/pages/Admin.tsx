@@ -63,6 +63,8 @@ const Admin = () => {
   const [activeGroupIds, setActiveGroupIds] = useState<string[]>([]);
   const [totalContractsMap, setTotalContractsMap] = useState<Record<string, number>>({});
   const [paidTotalsMap, setPaidTotalsMap] = useState<Record<string, number>>({});
+  const [sentNotificationsMap, setSentNotificationsMap] = useState<Record<string, boolean>>({});
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const approvedListTotalForGroup = (gid: string, totals: Record<string, number>) => (totals[gid] ?? 0);
 
   useEffect(() => {
@@ -75,6 +77,8 @@ const Admin = () => {
       navigate('/auth');
       return;
     }
+
+    setAdminUserId(session.user.id);
 
     // Check if user is admin
     const { data: roleData } = await supabase
@@ -95,17 +99,41 @@ const Admin = () => {
     }
 
     setIsAdmin(true);
-    await loadAdminData();
+    await loadAdminData(session.user.id);
     setLoading(false);
   };
 
-  const loadAdminData = async () => {
+  const loadAdminData = async (adminId?: string) => {
     // Load all groups
     const { data: groupsData } = await supabase
       .from('groups')
       .select('*')
       .order('created_at', { ascending: false });
     setGroups(groupsData || []);
+
+    // Check which groups have had notifications sent (by checking admin messages with "Push Notifications Sent" title)
+    const sentGroupsMap: Record<string, boolean> = {};
+    if (adminId) {
+      const { data: adminMessages } = await supabase
+        .from('messages')
+        .select('title')
+        .eq('user_id', adminId)
+        .ilike('title', '%Push Notifications Sent%');
+      
+      (adminMessages || []).forEach((msg: any) => {
+        // Extract group number from title like "Push Notifications Sent - IPR00002"
+        const match = msg.title.match(/- (IPR\d+)/);
+        if (match) {
+          const groupNum = match[1];
+          // Find group ID by group_number
+          const group = (groupsData || []).find((g: any) => g.group_number === groupNum);
+          if (group) {
+            sentGroupsMap[group.id] = true;
+          }
+        }
+      });
+    }
+    setSentNotificationsMap(sentGroupsMap);
 
     // Load pending join requests (avoid relationship filters that may be restricted by RLS)
     const { data: pendingData } = await supabase
@@ -420,7 +448,17 @@ const Admin = () => {
       const { data: groupInfo } = await supabase.from('groups').select('group_number').eq('id', groupId).maybeSingle();
       const groupNumber = groupInfo?.group_number || 'your group';
 
-      const messages = (members || []).map((m: any) => ({
+      // Determine admin session and exclude admin from recipient list
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminId = session?.user?.id || null;
+      const recipients = (members || []).filter((m: any) => m.user_id !== adminId);
+
+      if (recipients.length === 0) {
+        toast({ title: 'No members', description: 'No members to notify for this group (admin excluded).', variant: 'destructive' });
+        return;
+      }
+
+      const messages = recipients.map((m: any) => ({
         user_id: m.user_id,
         title: `Group ${groupNumber} Locked - Deposit Reminder`,
         body: `Your group ${groupNumber} is locked. You have until ${dStr} to visit our office and deposit your investment total.`,
@@ -429,13 +467,38 @@ const Admin = () => {
 
       const { error } = await supabase.from('messages').insert(messages);
       if (error) throw error;
-      toast({ title: 'Notifications Sent', description: `Push notifications sent to ${messages.length} member(s).` });
+
+      if (session?.user) {
+        // Fetch member names for admin message (exclude admin)
+        const userIds = recipients.map((m: any) => m.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', userIds);
+        
+        const memberNames = (profiles || [])
+          .map((p: any) => `${p.first_name} ${p.last_name}`)
+          .join(', ');
+
+        // Create admin message showing who was notified
+        const adminMessage = {
+          user_id: session.user.id,
+          title: `Push Notifications Sent - ${groupNumber}`,
+          body: `Deposit reminder notifications sent to ${recipients.length} member(s): ${memberNames}`,
+          is_read: false,
+        };
+
+        await supabase.from('messages').insert(adminMessage);
+      }
+
+      // Mark group as sent
+      setSentNotificationsMap((prev) => ({ ...prev, [groupId]: true }));
+      toast({ title: 'Notifications Sent', description: `Push notifications sent to ${recipients.length} member(s).` });
     } catch (e: any) {
       toast({ title: 'Failed', description: e.message || 'Failed to send notifications', variant: 'destructive' });
     }
   };
 
-  // Open push modal with prefilled message
   const [pushModalOpen, setPushModalOpen] = useState(false);
   const [pushGroupId, setPushGroupId] = useState<string | null>(null);
   const [pushTitle, setPushTitle] = useState<string>('');
@@ -466,8 +529,17 @@ const Admin = () => {
         toast({ title: 'No members', description: 'No members to notify for this group.', variant: 'destructive' });
         return;
       }
+      // exclude admin from recipients if present
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminId = session?.user?.id || null;
+      const recipients = (members || []).filter((m: any) => m.user_id !== adminId);
 
-      const messages = (members || []).map((m: any) => ({
+      if (recipients.length === 0) {
+        toast({ title: 'No members', description: 'No members to notify for this group (admin excluded).', variant: 'destructive' });
+        return;
+      }
+
+      const messages = recipients.map((m: any) => ({
         user_id: m.user_id,
         title: pushTitle,
         body: pushBody,
@@ -476,7 +548,7 @@ const Admin = () => {
 
       const { error } = await supabase.from('messages').insert(messages);
       if (error) throw error;
-      toast({ title: 'Notifications Sent', description: `Push notifications sent to ${messages.length} member(s).` });
+      toast({ title: 'Notifications Sent', description: `Push notifications sent to ${recipients.length} member(s).` });
       setPushModalOpen(false);
       setPushGroupId(null);
       setPushTitle('');
@@ -700,9 +772,14 @@ const Admin = () => {
                             <h3 className="text-lg font-semibold">{group.group_number}</h3>
                             <div className="flex items-center gap-2">
                               {group.status === 'locked' && (
-                                <Button size="sm" onClick={(e) => { e.stopPropagation(); sendPushNotificationForGroup(group.id); }} className="bg-red-600 text-white hover:bg-red-700">
+                                <Button 
+                                  size="sm" 
+                                  onClick={(e) => { e.stopPropagation(); sendPushNotificationForGroup(group.id); }} 
+                                  disabled={sentNotificationsMap[group.id] || false}
+                                  className={sentNotificationsMap[group.id] ? "bg-gray-400 text-white cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}
+                                >
                                   <Plus className="w-4 h-4 mr-2" />
-                                  Push Payment Notification
+                                  {sentNotificationsMap[group.id] ? 'Push Notification Sent' : 'Push Payment Notification'}
                                 </Button>
                               )}
                               <Badge
