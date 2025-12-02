@@ -510,9 +510,14 @@ const Dashboard = () => {
 
                           if (status === 'funds_deposited') {
                             const complete = groupCompleteMap[contract.group_id];
-                            label = complete ? 'PAID-active' : 'INACTIVE';
-                            variant = 'default';
-                            textColorClass = 'text-white';
+                            if (complete) {
+                              label = 'PAID-active';
+                              variant = 'default';
+                              textColorClass = 'text-white';
+                            } else {
+                              label = 'INACTIVE';
+                              return <Badge className="bg-red-500 text-white">{label}</Badge>;
+                            }
                           } else if (status === 'approved') {
                             label = 'UNPAID-inactive';
                             variant = 'default';
@@ -523,8 +528,8 @@ const Dashboard = () => {
                             label = 'PENDING';
                             variant = 'default';
                             textColorClass = 'text-white';
-                            // Add custom background color for orange
-                            return <Badge className="bg-orange-500 text-white">{label}</Badge>;
+                            // Add custom background color for red
+                            return <Badge className="bg-red-500 text-white">{label}</Badge>;
                           } else {
                             label = (contract.status || '').replace(/_/g, ' ').toUpperCase();
                             variant = 'secondary';
