@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import AdminProfile from "./pages/AdminProfile";
 import AdminWallet from "./pages/AdminWallet";
 import MemberWallet from "./pages/MemberWallet";
+import Messages from "./pages/Messages";
 import { Layout } from "./components/Layout";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/users" element={<Users />} />
           <Route path="/profile" element={<Layout><MemberProfile /></Layout>} />
           <Route path="/wallet" element={<MemberWallet />} />
+          <Route path="/messages" element={<Messages />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

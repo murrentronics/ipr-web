@@ -35,6 +35,25 @@ const Admin = () => {
     return "Inactive-Open";
   };
 
+  const getContractStatusLabel = (members: any[]) => {
+    if (members.length === 0) {
+      return "PENDING";
+    }
+    
+    const hasPaid = members.some((m: any) => m.status === 'funds_deposited');
+    const hasApproved = members.some((m: any) => m.status === 'approved');
+    const hasUnpaid = members.some((m: any) => m.status !== 'funds_deposited' && m.status !== 'approved');
+    
+    if (hasPaid) {
+      return "ACTIVE";
+    } else if (hasApproved && !hasPaid) {
+      return "PENDING";
+    } else if (hasUnpaid) {
+      return "UNPAID";
+    }
+    return "PENDING";
+  };
+
   // State for toggling group dropdowns and storing members
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [groupMembersMap, setGroupMembersMap] = useState<Record<string, any[]>>({});
@@ -667,7 +686,8 @@ const Admin = () => {
                     const members = groupMembersMap[group.id] || [];
                     const isLoadingMembers = loadingMembersMap[group.id] || false;
                     const displayStatus = getGroupDisplayStatus(group, activeGroupIds);
-                    const badgeVariant = displayStatus === 'Active-Open' ? 'default' : displayStatus === 'Inactive-Locked' ? 'secondary' : 'outline';
+                    const contractStatusLabel = getContractStatusLabel(members);
+                    const badgeVariant = contractStatusLabel === 'ACTIVE' ? 'default' : contractStatusLabel === 'UNPAID' ? 'destructive' : 'secondary';
 
                     return (
                       <div
@@ -687,9 +707,9 @@ const Admin = () => {
                               )}
                               <Badge
                                 variant={badgeVariant}
-                                className={displayStatus === "Inactive-Open" ? "bg-primary text-primary-foreground" : ""}
+                                className={contractStatusLabel === "UNPAID" ? "bg-red-600 text-white" : ""}
                               >
-                                {displayStatus}
+                                {contractStatusLabel}
                               </Badge>
                             </div>
                           </div>
@@ -734,8 +754,8 @@ const Admin = () => {
                                               Contracts: {Number(member.contracts_requested ?? 1)} | Price: ${ (Number(member.contracts_requested ?? 1) * PRICE_PER_CONTRACT).toLocaleString() }
                                             </p>
                                           </div>
-                                          <Badge variant={member.paid ? 'default' : 'destructive'}>
-                                            {member.paid ? 'Paid' : 'Pending'}
+                                          <Badge className={member.paid ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}>
+                                            {member.paid ? 'PAID' : 'UNPAID'}
                                           </Badge>
                                         </div>
                                         {!member.paid && member.profiles?.id && (

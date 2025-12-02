@@ -505,37 +505,28 @@ const Dashboard = () => {
                         {(() => {
                           const status = (contract.status || '').toLowerCase();
                           let label = '';
-                          let variant: "default" | "secondary" | "destructive" | "outline" = 'default';
-                          let textColorClass = 'text-white'; // Default text color for status badges
+                          let className = '';
 
                           if (status === 'funds_deposited') {
                             const complete = groupCompleteMap[contract.group_id];
                             if (complete) {
-                              label = 'PAID-active';
-                              variant = 'default';
-                              textColorClass = 'text-white';
+                              label = 'ACTIVE';
+                              className = 'bg-green-500 text-white';
                             } else {
                               label = 'INACTIVE';
-                              return <Badge className="bg-red-500 text-white">{label}</Badge>;
+                              className = 'bg-gray-500 text-white';
                             }
                           } else if (status === 'approved') {
-                            label = 'UNPAID-inactive';
-                            variant = 'default';
-                            textColorClass = 'text-white';
-                            // Add custom background color for red
-                            return <Badge className="bg-red-500 text-white">{label}</Badge>;
+                            label = 'UNPAID';
+                            className = 'bg-red-500 text-white';
                           } else if (status === 'pending') {
                             label = 'PENDING';
-                            variant = 'default';
-                            textColorClass = 'text-white';
-                            // Add custom background color for red
-                            return <Badge className="bg-red-500 text-white">{label}</Badge>;
+                            className = 'bg-orange-500 text-white';
                           } else {
                             label = (contract.status || '').replace(/_/g, ' ').toUpperCase();
-                            variant = 'secondary';
-                            textColorClass = 'text-white';
+                            className = 'bg-gray-500 text-white';
                           }
-                          return <Badge variant={variant} className={textColorClass}>{label}</Badge>;
+                          return <Badge className={className}>{label}</Badge>;
                         })()}
                       </div>
                     ))}
