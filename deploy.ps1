@@ -5,7 +5,7 @@ $projectDir = "C:\Users\Trecia\IPR-Web\ipr-web"
 $remoteUser = "u2434-z1xcpwxs0vtm"
 $remoteHost = "ssh.theronm22.sg-host.com"
 $remotePort = "18765"
-$remotePath = "/home/u2434-z1xcpwxs0vtm/public_html/"
+$remotePath = "u2434-z1xcpwxs0vtm/public_html/"
 
 Write-Host "Starting deployment process..."
 
