@@ -276,7 +276,7 @@ const MemberWallet = () => {
         <Card className="mb-8">
 
           <CardContent>
-            <p className="text-2xl font-bold mb-4">Current Balance: ${walletBalance.toFixed(2)}</p>
+            <p className="text-2xl font-bold mb-4">Current Balance: ${walletBalance.toFixed(2)} TT</p>
 
             <Tabs defaultValue="request" className="w-full">
               <TabsList className="grid w-full grid-cols-4 mb-4">
@@ -358,12 +358,12 @@ const MemberWallet = () => {
 
               <TabsContent value="pending">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Pending Withdrawal Requests</CardTitle>
-                  </CardHeader>
+                  <CardHeader className={pendingRequests.length === 0 ? 'text-center' : ''}>
+                        <CardTitle>Pending Withdrawal Requests</CardTitle>
+                      </CardHeader>
                   <CardContent>
                     {pendingRequests.length === 0 ? (
-                      <p>No pending withdrawal requests.</p>
+                      <p className="text-center py-8 text-muted-foreground">No pending withdrawal requests.</p>
                     ) : (
                       <Table>
                         <TableHeader>
@@ -390,12 +390,12 @@ const MemberWallet = () => {
 
               <TabsContent value="approved">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className={approvedRequests.length === 0 ? 'text-center' : ''}>
                     <CardTitle>Approved Withdrawal Requests</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {approvedRequests.length === 0 ? (
-                      <p>No approved withdrawal requests.</p>
+                      <p className="text-center py-8 text-muted-foreground">No approved withdrawal requests.</p>
                     ) : (
                       <Table>
                         <TableHeader>
@@ -422,12 +422,12 @@ const MemberWallet = () => {
 
               <TabsContent value="denied">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className={deniedRequests.length === 0 ? 'text-center' : ''}>
                     <CardTitle>Denied Withdrawal Requests</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {deniedRequests.length === 0 ? (
-                      <p>No denied withdrawal requests.</p>
+                      <p className="text-center py-8 text-muted-foreground">No denied withdrawal requests.</p>
                     ) : (
                       <Table>
                         <TableHeader>
