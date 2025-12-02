@@ -179,7 +179,16 @@ const Home = () => {
             <p className="text-xl text-primary-foreground/90 mb-8">
               Join thousands of investors already earning passive income through IPR
             </p>
-            { !isLoggedIn && (
+            {isLoggedIn ? (
+              <Button 
+                size="lg" 
+                variant="secondary"
+                onClick={() => navigate('/dashboard')}
+                className="shadow-glow"
+              >
+                Get Started
+              </Button>
+            ) : (
               <Button 
                 size="lg" 
                 variant="secondary"
