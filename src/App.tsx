@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import UpdatePassword from "./pages/UpdatePassword";
 import AdminProfile from "./pages/AdminProfile";
 import AdminWallet from "./pages/AdminWallet";
 import MemberWallet from "./pages/MemberWallet";
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/profile" element={<Layout><MemberProfile /></Layout>} />
           <Route path="/wallet" element={<MemberWallet />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/update-password" element={<UpdatePassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
