@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -58,58 +58,58 @@ const MemberProfile = () => {
   const [hasSpecialChar, setHasSpecialChar] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(false);
 
-  useEffect(() => {
-    const getProfile = async () => {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+  const getProfile = useCallback(async () => {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
+    if (!session) {
+      navigate('/auth');
+      return;
+    }
 
-      setUserId(session.user.id);
-      setEmail(session.user.email || '');
+    setUserId(session.user.id);
+    setEmail(session.user.email || '');
 
-      // Determine login methods
-      const isGoogle = session.user.app_metadata?.provider === 'google' || session.user.identities?.some(identity => identity.provider === 'google');
-      const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
-      setIsGoogleUser(isGoogle);
-      setIsEmailUser(isEmail);
+    // Determine login methods
+    const isGoogle = session.user.app_metadata?.provider === 'google' || session.user.identities?.some(identity => identity.provider === 'google');
+    const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
+    setIsGoogleUser(isGoogle);
+    setIsEmailUser(isEmail);
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, phone')
-        .eq('id', session.user.id)
-        .single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, phone')
+      .eq('id', session.user.id)
+      .single();
 
-      if (error) {
-        toast({ title: 'Error loading profile', description: error.message, variant: 'destructive' });
-      } else if (data) {
-        setFirstName(data.first_name || '');
-        setLastName(data.last_name || '');
-        // Format existing phone number
-        if (data.phone) {
-          const digits = String(data.phone).replace(/\D/g, '');
-          let formattedPhone = '+1868';
-          if (digits.length > 0) {
-            formattedPhone += ' ';
-            if (digits.length > 3) {
-              formattedPhone += `${digits.substring(0, 3)}-${digits.substring(3, 7)}`;
-            } else {
-              formattedPhone += digits.substring(0, 7);
-            }
+    if (error) {
+      toast({ title: 'Error loading profile', description: error.message, variant: 'destructive' });
+    } else if (data) {
+      setFirstName(data.first_name || '');
+      setLastName(data.last_name || '');
+      // Format existing phone number
+      if (data.phone) {
+        const digits = String(data.phone).replace(/\D/g, '');
+        let formattedPhone = '+1868';
+        if (digits.length > 0) {
+          formattedPhone += ' ';
+          if (digits.length > 3) {
+            formattedPhone += `${digits.substring(0, 3)}-${digits.substring(3, 7)}`;
+          } else {
+            formattedPhone += digits.substring(0, 7);
           }
-          setPhone(formattedPhone);
-        } else {
-          setPhone('+1868');
         }
+        setPhone(formattedPhone);
+      } else {
+        setPhone('+1868');
       }
-      setLoading(false);
-    };
+    }
+    setLoading(false);
+  }, [navigate, toast]);
 
+  useEffect(() => {
     getProfile();
-  }, [navigate]);
+  }, [getProfile]);
 
   useEffect(() => {
     // Min 1 Cap letter
@@ -195,6 +195,8 @@ const MemberProfile = () => {
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
+      // Re-fetch profile to update login methods
+      getProfile();
     }
     setLoading(false);
   };
