@@ -11,12 +11,11 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [roleResolved, setRoleResolved] = useState(false);
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const handleAuthStateChange = async (event: any, session: any) => {
       setIsLoggedIn(!!session);
-
       if (session) {
         const { data: roleData } = await supabase
           .from('user_roles')
@@ -29,8 +28,20 @@ const Home = () => {
         setIsAdmin(false);
       }
       setIsLoading(false);
+      setRoleResolved(true);
     };
-    checkUser();
+
+    // Initial check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthStateChange(null, session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -54,22 +65,26 @@ const Home = () => {
               Join closed membership investment groups in Trinidad & Tobago and generate $1,800/month for 60 months.
               Perfect for first-time investors and stay-at-home moms.
             </p>
-            {isLoading ? (
+            {isLoading || !roleResolved ? (
               <div className="flex gap-4 justify-center">
                 <div className="w-40 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
                 <div className="w-40 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
-              </div>
-            ) : isAdmin && isLoggedIn ? (
-              <div className="flex gap-4 justify-center">
-                <Button size="lg" onClick={() => navigate('/admin')} className="shadow-lg bg-primary text-white hover:bg-primary/90">
-                  Go to Admin Panel
-                </Button>
               </div>
             ) : (
               <div className="flex gap-4 justify-center">
-                <Button size="lg" onClick={() => navigate('/auth')} className="shadow-lg bg-primary text-white hover:bg-primary/90">
-                  Get Started Today
-                </Button>
+                {isLoggedIn && isAdmin ? (
+                  <Button size="lg" onClick={() => navigate('/admin')} className="shadow-lg bg-primary text-white hover:bg-primary/90">
+                    Go to Admin Panel
+                  </Button>
+                ) : isLoggedIn && !isAdmin ? (
+                  <Button size="lg" onClick={() => navigate('/dashboard')} className="shadow-lg bg-primary text-white hover:bg-primary/90">
+                    Go to Dashboard
+                  </Button>
+                ) : (
+                  <Button size="lg" onClick={() => navigate('/auth')} className="shadow-lg bg-primary text-white hover:bg-primary/90">
+                    Get Started Today
+                  </Button>
+                )}
                 <Button size="lg" variant="outline" onClick={() => navigate('/how-it-works')}>
                   Learn More
                 </Button>
