@@ -12,7 +12,34 @@ const MemberProfile = () => {
   const [loading, setLoading] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+1868');
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const prefix = '+1868';
+
+    if (!input.startsWith(prefix)) {
+      setPhone(prefix);
+      return;
+    }
+
+    let digits = input.substring(prefix.length).replace(/\D/g, '');
+
+    if (digits.length > 7) {
+      digits = digits.substring(0, 7);
+    }
+
+    let formattedPhone = prefix;
+    if (digits.length > 0) {
+      formattedPhone += ' ';
+      if (digits.length > 3) {
+        formattedPhone += `${digits.substring(0, 3)}-${digits.substring(3)}`;
+      } else {
+        formattedPhone += digits;
+      }
+    }
+    setPhone(formattedPhone);
+  };
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [oldPassword, setOldPassword] = useState('');
@@ -53,7 +80,22 @@ const MemberProfile = () => {
       } else if (data) {
         setFirstName(data.first_name || '');
         setLastName(data.last_name || '');
-        setPhone(data.phone || '');
+        // Format existing phone number
+        if (data.phone) {
+          const digits = String(data.phone).replace(/\D/g, '');
+          let formattedPhone = '+1868';
+          if (digits.length > 0) {
+            formattedPhone += ' ';
+            if (digits.length > 3) {
+              formattedPhone += `${digits.substring(0, 3)}-${digits.substring(3, 7)}`;
+            } else {
+              formattedPhone += digits.substring(0, 7);
+            }
+          }
+          setPhone(formattedPhone);
+        } else {
+          setPhone('+1868');
+        }
       }
       setLoading(false);
     };
@@ -82,9 +124,11 @@ const MemberProfile = () => {
       return;
     }
 
+    const cleanedPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
+
     const { error } = await supabase
       .from('profiles')
-      .update({ first_name: firstName, last_name: lastName, phone: phone })
+      .update({ first_name: firstName, last_name: lastName, phone: cleanedPhone })
       .eq('id', userId);
 
     if (error) {
@@ -188,8 +232,9 @@ const MemberProfile = () => {
                 id="phone"
                 type="text"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone Number"
+                onChange={handlePhoneChange}
+                placeholder="+1868 XXX-XXXX"
+                maxLength={14}
               />
             </div>
             <Button onClick={handleSave} className="w-full">
