@@ -74,7 +74,9 @@ const MemberProfile = () => {
     const isGoogle = session.user.app_metadata?.provider === 'google' || session.user.identities?.some(identity => identity.provider === 'google');
     const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
     setIsGoogleUser(isGoogle);
-    setIsEmailUser(isEmail);
+      setIsEmailUser(isEmail);
+      console.log("isGoogleUser:", isGoogle);
+      console.log("isEmailUser:", isEmail);
 
     const { data, error } = await supabase
       .from('profiles')
@@ -398,7 +400,7 @@ const MemberProfile = () => {
               </p>
             </div>
             <Button onClick={handleChangePassword} className="w-full">
-              Change Password
+              {(!isGoogleUser || isEmailUser) ? "Change Password" : "Create Password"}
             </Button>
           </div>
         </CardContent>
