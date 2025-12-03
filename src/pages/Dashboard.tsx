@@ -792,7 +792,7 @@ const Dashboard = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIncompleteProfileDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => { setIncompleteProfileDialogOpen(false); navigate('/member-profile'); }}>
+            <Button onClick={() => { setIncompleteProfileDialogOpen(false); navigate('/profile'); }}>
               Update Profile
             </Button>
           </DialogFooter>
