@@ -82,6 +82,7 @@ const Dashboard = () => {
   const formatDMY = (d: Date) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`;
   const [activationMap, setActivationMap] = useState<Record<string, Date>>({});
   const [groupCompleteMap, setGroupCompleteMap] = useState<Record<string, boolean>>({});
+  const [incompleteProfileDialogOpen, setIncompleteProfileDialogOpen] = useState(false);
 
   const loadUserData = useCallback(async (userId: string) => {
     try {
@@ -184,6 +185,36 @@ const Dashboard = () => {
     }
   }, [setProfile, setGroups, setContracts, setActivationMap, setGroupCompleteMap, setPendingCounts, toast, setLoading]);
 
+  const saveGoogleProfileData = useCallback(async (userId: string, userMetadata: Record<string, unknown>) => {
+    // Extract name from Google OAuth metadata
+    const fullName = userMetadata?.full_name as string || userMetadata?.name as string || '';
+    const nameParts = fullName.split(' ');
+    const firstName = userMetadata?.given_name as string || nameParts[0] || '';
+    const lastName = userMetadata?.family_name as string || nameParts.slice(1).join(' ') || '';
+    const email = userMetadata?.email as string || '';
+
+    if (firstName || lastName || email) {
+      // Check if profile exists and needs updating
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', userId)
+        .single();
+
+      // Only update if fields are empty
+      const updates: Record<string, string> = {};
+      if (!existingProfile?.first_name && firstName) updates.first_name = firstName;
+      if (!existingProfile?.last_name && lastName) updates.last_name = lastName;
+      if (!existingProfile?.email && email) updates.email = email;
+
+      if (Object.keys(updates).length > 0) {
+        await supabase
+          .from('profiles')
+          .upsert({ id: userId, ...updates });
+      }
+    }
+  }, []);
+
   const checkAuth = useCallback(async () => {
     const { data: { session } }: { data: { session: Session | null } } = await supabase.auth.getSession();
 
@@ -206,9 +237,14 @@ const Dashboard = () => {
       return;
     }
 
+    // Save Google OAuth profile data if present
+    if (session.user.app_metadata?.provider === 'google' || session.user.identities?.some(i => i.provider === 'google')) {
+      await saveGoogleProfileData(session.user.id, session.user.user_metadata);
+    }
+
     setUser(session.user);
     loadUserData(session.user.id);
-  }, [navigate, loadUserData]);
+  }, [navigate, loadUserData, saveGoogleProfileData]);
 
   useEffect(() => {
     checkAuth();
@@ -301,7 +337,15 @@ const Dashboard = () => {
     }
   }, [user, toast, loadUserData, setJoinDialogOpen, setSelectedGroup, setContractsCount]);
 
+  const isProfileComplete = useCallback(() => {
+    return !!(profile?.first_name?.trim() && profile?.last_name?.trim() && profile?.phone?.trim());
+  }, [profile]);
+
   const openJoinDialog = (group: Group) => {
+    if (!isProfileComplete()) {
+      setIncompleteProfileDialogOpen(true);
+      return;
+    }
     setSelectedGroup(group);
     setContractsCount(1);
     setJoinDialogOpen(true);
@@ -704,6 +748,53 @@ const Dashboard = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setJoinDialogOpen(false)} disabled={submitting}>Cancel</Button>
             <Button onClick={() => selectedGroup && requestToJoinGroup(selectedGroup.id, contractsCount)} disabled={submitting}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Incomplete Profile Warning Dialog */}
+      <Dialog open={incompleteProfileDialogOpen} onOpenChange={setIncompleteProfileDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <XCircle className="w-5 h-5" />
+              Profile Incomplete
+            </DialogTitle>
+            <DialogDescription>
+              Before you can request to join a group, please complete your profile with the following required information:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-4">
+            <div className="flex items-center gap-2">
+              {profile?.first_name?.trim() ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-500" />
+              )}
+              <span className={profile?.first_name?.trim() ? 'text-muted-foreground' : 'font-medium'}>First Name</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {profile?.last_name?.trim() ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-500" />
+              )}
+              <span className={profile?.last_name?.trim() ? 'text-muted-foreground' : 'font-medium'}>Last Name</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {profile?.phone?.trim() ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-500" />
+              )}
+              <span className={profile?.phone?.trim() ? 'text-muted-foreground' : 'font-medium'}>Phone Number</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIncompleteProfileDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => { setIncompleteProfileDialogOpen(false); navigate('/member-profile'); }}>
+              Update Profile
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
