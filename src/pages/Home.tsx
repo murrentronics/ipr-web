@@ -10,6 +10,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -24,7 +25,10 @@ const Home = () => {
           .eq('role', 'admin')
           .maybeSingle();
         setIsAdmin(!!roleData);
+      } else {
+        setIsAdmin(false);
       }
+      setIsLoading(false);
     };
     checkUser();
   }, []);
@@ -50,7 +54,18 @@ const Home = () => {
               Join closed membership investment groups in Trinidad & Tobago and generate $1,800/month for 60 months.
               Perfect for first-time investors and stay-at-home moms.
             </p>
-            { !isAdmin && (
+            {isLoading ? (
+              <div className="flex gap-4 justify-center">
+                <div className="w-40 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="w-40 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+              </div>
+            ) : isAdmin && isLoggedIn ? (
+              <div className="flex gap-4 justify-center">
+                <Button size="lg" onClick={() => navigate('/admin')} className="shadow-lg bg-primary text-white hover:bg-primary/90">
+                  Go to Admin Panel
+                </Button>
+              </div>
+            ) : (
               <div className="flex gap-4 justify-center">
                 <Button size="lg" onClick={() => navigate('/auth')} className="shadow-lg bg-primary text-white hover:bg-primary/90">
                   Get Started Today

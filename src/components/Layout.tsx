@@ -148,8 +148,13 @@ export const Layout = ({ children }: LayoutProps) => {
                   >
                     <Info className="w-4 h-4" />
                   </Button>
-
-
+                  <Button
+                    variant={isActive('/how-it-works') ? 'default' : 'ghost'}
+                    size="icon"
+                    onClick={() => navigate('/how-it-works')}
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                  </Button>
                 </>
               )}
 
@@ -199,13 +204,7 @@ export const Layout = ({ children }: LayoutProps) => {
                       >
                         <Wallet className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant={isActive('/how-it-works') ? 'default' : 'ghost'}
-                        size="icon"
-                        onClick={() => navigate('/how-it-works')}
-                      >
-                        <HelpCircle className="w-4 h-4" />
-                      </Button>
+
                       <Button
                         variant={isActive('/contact') ? 'default' : 'ghost'}
                         size="icon"

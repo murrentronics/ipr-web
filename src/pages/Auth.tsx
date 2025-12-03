@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -42,6 +43,9 @@ const Auth = () => {
     email: "",
     password: "",
   });
+
+  const [forgotPasswordDialogOpen, setForgotPasswordDialogOpen] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
 
   useEffect(() => {
     // Check if already logged in
@@ -131,6 +135,32 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } else {
+        toast({
+          title: "Password Reset Email Sent",
+          description: "Please check your email for the password reset link.",
+        });
+        setForgotPasswordDialogOpen(false);
+        setForgotPasswordEmail("");
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -167,6 +197,27 @@ const Auth = () => {
           variant: "destructive",
         });
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -215,6 +266,20 @@ const Auth = () => {
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Logging in..." : "Login"}
                     </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={handleGoogleLogin}
+                      disabled={loading}
+                    >
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12.24 10.285V14.4h6.806c-.275 1.764-2.05 5.09-6.806 5.09-4.094 0-7.439-3.325-7.439-7.438S8.146 2.562 12.24 2.562c2.68 0 4.4 1.186 5.36 2.188l3.06-2.97c-1.75-1.67-4.7-3.778-8.42-3.778C5.29 0 0 5.36 0 12s5.29 12 12.24 12c7.107 0 11.006-5.09 11.006-10.75 0-.75-.06-1.24-.16-1.725H12.24z"/></svg>
+                      {loading ? "Signing in..." : "Sign in with Google"}
+                    </Button>
+                    <div className="text-center text-sm">
+                      <a href="#" onClick={() => setForgotPasswordDialogOpen(true)} className="text-primary hover:underline">
+                        Forgot password?
+                      </a>
+                    </div>
                   </form>
                 </CardContent>
               </Card>
@@ -262,11 +327,11 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
+                      <Label htmlFor="signup-phone">Phone Number</Label>
                       <Input
-                        id="phone"
+                        id="signup-phone"
                         type="tel"
-                        placeholder="+1 (555) 123-4567"
+                        placeholder="123-456-7890"
                         value={signupData.phone}
                         onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
                         required
@@ -296,6 +361,35 @@ const Auth = () => {
           </Tabs>
         </div>
       </div>
+
+      <Dialog open={forgotPasswordDialogOpen} onOpenChange={setForgotPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address to receive a password reset link.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email">Email</Label>
+              <Input
+                id="forgot-email"
+                type="email"
+                placeholder="your@email.com"
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Sending..." : "Send Reset Link"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

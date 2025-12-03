@@ -5,6 +5,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EyeIcon, EyeOffIcon, CheckCircle, XCircle } from 'lucide-react';
 
 const MemberProfile = () => {
   const navigate = useNavigate();
@@ -14,6 +15,19 @@ const MemberProfile = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  // Password validation states
+  const [hasCapital, setHasCapital] = useState(false);
+  const [hasMinLength, setHasMinLength] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
+  const [hasSpecialChar, setHasSpecialChar] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState(false);
 
   useEffect(() => {
     const getProfile = async () => {
@@ -47,6 +61,19 @@ const MemberProfile = () => {
     getProfile();
   }, [navigate]);
 
+  useEffect(() => {
+    // Min 1 Cap letter
+    setHasCapital(/[A-Z]/.test(newPassword));
+    // Min 8 letters
+    setHasMinLength(newPassword.length >= 8);
+    // min 1 number
+    setHasNumber(/\d/.test(newPassword));
+    // Min 1 special character
+    setHasSpecialChar(/[!@#$%^&*(),.?":{}|<>]/.test(newPassword));
+    // New Passwords Match
+    setPasswordsMatch(newPassword === confirmNewPassword && newPassword !== '');
+  }, [newPassword, confirmNewPassword]);
+
   const handleSave = async () => {
     setLoading(true);
     if (!userId) {
@@ -68,12 +95,57 @@ const MemberProfile = () => {
     setLoading(false);
   };
 
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmNewPassword) {
+      toast({ title: 'Error', description: 'Please fill in all password fields.', variant: 'destructive' });
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast({ title: 'Error', description: 'New passwords do not match.', variant: 'destructive' });
+      return;
+    }
+
+    if (!hasCapital || !hasMinLength || !hasNumber || !hasSpecialChar || !passwordsMatch) {
+      toast({ title: 'Error', description: 'New password does not meet all requirements.', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+
+    // Re-authenticate user with old password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email, // Assuming email is available in state
+      password: oldPassword,
+    });
+
+    if (signInError) {
+      toast({ title: 'Error', description: 'Incorrect old password.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      toast({ title: 'Error changing password', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'Password updated successfully.' });
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    }
+    setLoading(false);
+  };
+
   if (loading) {
     return <div>Loading profile...</div>;
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">Member Profile</CardTitle>
@@ -122,6 +194,116 @@ const MemberProfile = () => {
             </div>
             <Button onClick={handleSave} className="w-full">
               Save Changes
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="w-full max-w-md mt-4">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">Change Password</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <label htmlFor="oldPassword">Old Password</label>
+              <div className="relative">
+                <Input
+                  id="oldPassword"
+                  type={showOldPassword ? "text" : "password"}
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="Old Password"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowOldPassword((prev) => !prev)}
+                >
+                  {showOldPassword ? (
+                    <EyeIcon className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <EyeOffIcon className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">{showOldPassword ? "Hide password" : "Show password"}</span>
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="newPassword">New Password</label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="New Password"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                >
+                  {showNewPassword ? (
+                    <EyeIcon className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <EyeOffIcon className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">{showNewPassword ? "Hide password" : "Show password"}</span>
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="confirmNewPassword">Confirm New Password</label>
+              <div className="relative">
+                <Input
+                  id="confirmNewPassword"
+                  type={showConfirmNewPassword ? "text" : "password"}
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Confirm New Password"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmNewPassword((prev) => !prev)}
+                >
+                  {showConfirmNewPassword ? (
+                    <EyeIcon className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <EyeOffIcon className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">{showConfirmNewPassword ? "Hide password" : "Show password"}</span>
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-2 text-sm">
+              <p className={`flex items-center ${hasCapital ? 'text-green-500' : 'text-red-500'}`}>
+                {hasCapital ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                Min 1 Capital letter
+              </p>
+              <p className={`flex items-center ${hasMinLength ? 'text-green-500' : 'text-red-500'}`}>
+                {hasMinLength ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                Min 8 letters
+              </p>
+              <p className={`flex items-center ${hasNumber ? 'text-green-500' : 'text-red-500'}`}>
+                {hasNumber ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                Min 1 number
+              </p>
+              <p className={`flex items-center ${hasSpecialChar ? 'text-green-500' : 'text-red-500'}`}>
+                {hasSpecialChar ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                Min 1 special character
+              </p>
+              <p className={`flex items-center ${passwordsMatch ? 'text-green-500' : 'text-red-500'}`}>
+                {passwordsMatch ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                New Passwords Match
+              </p>
+            </div>
+            <Button onClick={handleChangePassword} className="w-full">
+              Change Password
             </Button>
           </div>
         </CardContent>

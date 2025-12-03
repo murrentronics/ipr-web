@@ -53,7 +53,7 @@ const AdminWallet = () => {
         bank_details (*)
       `)
       .eq('status', 'pending')
-      .order('requested_at', { ascending: true });
+      .order('requested_at', { ascending: false });
 
     if (error) {
       toast({
