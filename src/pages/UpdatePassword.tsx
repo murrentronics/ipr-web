@@ -108,9 +108,15 @@ const UpdatePassword = () => {
       return;
     }
 
+    console.log('Attempting to update password...');
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
+    if (error) {
+      console.error('Supabase password update error:', error);
+    } else {
+      console.log('Supabase password update successful.');
+    }
 
     if (error) {
       toast({ title: 'Error updating password', description: error.message, variant: 'destructive' });
