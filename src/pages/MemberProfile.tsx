@@ -147,13 +147,11 @@ const MemberProfile = () => {
       return;
     }
 
-    const fullPhoneNumber = `+1868${phone}`;
-
-    console.log("Saving profile with:", { userId, firstName, lastName, phone: fullPhoneNumber });
+    console.log("Saving profile with:", { userId, firstName, lastName, phone: phone });
 
     const { data, error } = await supabase
       .from('profiles')
-      .update({ first_name: firstName, last_name: lastName, phone: fullPhoneNumber })
+      .update({ first_name: firstName, last_name: lastName, phone: phone })
       .eq('id', userId);
 
     if (error) {
@@ -291,7 +289,7 @@ const MemberProfile = () => {
             <div className="grid gap-2">
               <label htmlFor="phone">Phone Number</label>
               <div className="flex items-center">
-                <span className="mr-2">+1 (868)</span>
+                <span className="mr-2">(868)</span>
                 <Input
                   id="phone"
                   type="text"

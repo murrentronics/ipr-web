@@ -10,19 +10,32 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { z } from "zod";
+import { CheckCircle, Eye, EyeOff } from "lucide-react";
 
 const signupSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
   lastName: z.string().min(1, "Last name is required").max(50),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  phone: z.string().min(7, "Phone number is required"),
+  confirmPassword: z.string().min(1, "Confirm password is required"),
+  phone: z.string().length(7, "Phone number must be 7 digits"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
+
+const formatPhoneNumber = (phoneNumber: string) => {
+  const cleaned = phoneNumber.replace(/\D/g, '');
+  if (cleaned.length <= 3) {
+    return cleaned;
+  }
+  return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 7)}`;
+};
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -35,8 +48,17 @@ const Auth = () => {
     lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
   });
+
+  // Password validation states
+  const [hasCapital, setHasCapital] = useState(false);
+  const [hasMinLength, setHasMinLength] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
+  const [hasSpecialChar, setHasSpecialChar] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Login form
   const [loginData, setLoginData] = useState({
@@ -56,6 +78,19 @@ const Auth = () => {
     });
   }, [navigate]);
 
+  useEffect(() => {
+    // Min 1 Cap letter
+    setHasCapital(/[A-Z]/.test(signupData.password));
+    // Min 8 letters
+    setHasMinLength(signupData.password.length >= 8);
+    // min 1 number
+    setHasNumber(/\d/.test(signupData.password));
+    // Min 1 special character
+    setHasSpecialChar(/[!@#$%^&*(),.?":{}|<>]/.test(signupData.password));
+    // New Passwords Match
+    setPasswordsMatch(signupData.password === signupData.confirmPassword && signupData.password !== '');
+  }, [signupData.password, signupData.confirmPassword]);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -71,7 +106,7 @@ const Auth = () => {
           data: {
             first_name: signupData.firstName,
             last_name: signupData.lastName,
-            phone: signupData.phone || null,
+            phone: `+1868${signupData.phone}` || null,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -120,7 +155,7 @@ const Auth = () => {
           });
         }
         // Clear form
-        setSignupData({ firstName: "", lastName: "", email: "", password: "", phone: "" });
+        setSignupData({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "", phone: "" });
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -333,29 +368,104 @@ const Auth = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-phone">Phone Number</Label>
-                      <Input
-                        id="signup-phone"
-                        type="tel"
-                        placeholder="123-456-7890"
-                        value={signupData.phone}
-                        onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
-                        required
-                      />
+                      <div className="flex items-center">
+                        <span className="mr-2">(868)</span>
+                        <Input
+                          id="signup-phone"
+                          type="tel"
+                          placeholder="XXX-XXXX"
+                          value={formatPhoneNumber(signupData.phone)}
+                          onChange={(e) =>
+                            setSignupData({
+                              ...signupData,
+                              phone: e.target.value.replace(/\D/g, '').substring(0, 7),
+                            })
+                          }
+                          maxLength={8} // 7 digits + 1 hyphen
+                          required
+                          className="flex-grow"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">Password</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={signupData.password}
-                        onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Must be at least 8 characters
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={signupData.password}
+                          onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                          required
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="signup-confirm-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={signupData.confirmPassword}
+                          onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
+                          required
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid gap-2 text-sm">
+                      <p className={`flex items-center ${hasCapital ? 'text-green-500' : 'text-red-500'}`}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${hasCapital ? 'text-green-500' : 'text-red-500'}`} />
+                        Min 1 Capital letter
+                      </p>
+                      <p className={`flex items-center ${hasMinLength ? 'text-green-500' : 'text-red-500'}`}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${hasMinLength ? 'text-green-500' : 'text-red-500'}`} />
+                        Min 8 letters
+                      </p>
+                      <p className={`flex items-center ${hasNumber ? 'text-green-500' : 'text-red-500'}`}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${hasNumber ? 'text-green-500' : 'text-red-500'}`} />
+                        Min 1 number
+                      </p>
+                      <p className={`flex items-center ${hasSpecialChar ? 'text-green-500' : 'text-red-500'}`}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${hasSpecialChar ? 'text-green-500' : 'text-red-500'}`} />
+                        Min 1 special character
+                      </p>
+                      <p className={`flex items-center ${passwordsMatch ? 'text-green-500' : 'text-red-500'}`}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${passwordsMatch ? 'text-green-500' : 'text-red-500'}`} />
+                        New Passwords Match
                       </p>
                     </div>
+
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Creating Account..." : "Create Account"}
                     </Button>
