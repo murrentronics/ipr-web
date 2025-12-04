@@ -5,40 +5,19 @@ import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EyeIcon, EyeOffIcon, CheckCircle, XCircle } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, CheckCircle, XCircle, Mail } from 'lucide-react';
 
 const MemberProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('+1868');
+  const [phone, setPhone] = useState('');
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
-    const prefix = '+1868';
-
-    if (!input.startsWith(prefix)) {
-      setPhone(prefix);
-      return;
-    }
-
-    let digits = input.substring(prefix.length).replace(/\D/g, '');
-
-    if (digits.length > 7) {
-      digits = digits.substring(0, 7);
-    }
-
-    let formattedPhone = prefix;
-    if (digits.length > 0) {
-      formattedPhone += ' ';
-      if (digits.length > 3) {
-        formattedPhone += `${digits.substring(0, 3)}-${digits.substring(3)}`;
-      } else {
-        formattedPhone += digits;
-      }
-    }
-    setPhone(formattedPhone);
+    const input = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
+    const limitedInput = input.substring(0, 7); // Limit to 7 digits
+    setPhone(limitedInput);
   };
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -50,6 +29,7 @@ const MemberProfile = () => {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isGoogleUser, setIsGoogleUser] = useState(false);
   const [isEmailUser, setIsEmailUser] = useState(false);
+  const [hasEmailPassword, setHasEmailPassword] = useState(false);
 
   // Password validation states
   const [hasCapital, setHasCapital] = useState(false);
@@ -57,6 +37,14 @@ const MemberProfile = () => {
   const [hasNumber, setHasNumber] = useState(false);
   const [hasSpecialChar, setHasSpecialChar] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(false);
+
+  const formatPhoneNumber = (phoneNumber: string) => {
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    if (cleaned.length <= 3) {
+      return cleaned;
+    }
+    return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 7)}`;
+  };
 
   const getProfile = useCallback(async () => {
     setLoading(true);
@@ -70,13 +58,26 @@ const MemberProfile = () => {
     setUserId(session.user.id);
     setEmail(session.user.email || '');
 
+    console.log("Supabase session user:", session.user);
+    console.log("Supabase session user app_metadata:", session.user.app_metadata);
+    console.log("Supabase session user identities:", session.user.identities);
+
     // Determine login methods
     const isGoogle = session.user.app_metadata?.provider === 'google' || session.user.identities?.some(identity => identity.provider === 'google');
+    // A user has an email/password if their initial sign-in was email, or if they have an 'email' identity
     const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
+    // Additionally, if the user has an email and is not exclusively a Google user, they likely have an email/password.
+    // This handles cases where a Google user might add an email/password later.
+    setHasEmailPassword(isEmail || (session.user.email && !isGoogle));
     setIsGoogleUser(isGoogle);
-      setIsEmailUser(isEmail);
+      setIsEmailUser(isEmail || (session.user.email && !isGoogle));
       console.log("isGoogleUser:", isGoogle);
-      console.log("isEmailUser:", isEmail);
+      console.log("isEmailUser:", isEmail || (session.user.email && !isGoogle));
+      console.log("Debug - session.user.app_metadata.provider:", session.user.app_metadata?.provider);
+      console.log("Debug - session.user.identities:", session.user.identities);
+      console.log("Debug - isGoogle (calculated):", isGoogle);
+      console.log("Debug - isEmail (calculated):", isEmail);
+      console.log("Debug - hasEmailPassword (state value):", isEmail || (session.user.email && !isGoogle));
 
     const { data, error } = await supabase
       .from('profiles')
@@ -91,27 +92,33 @@ const MemberProfile = () => {
       setLastName(data.last_name || '');
       // Format existing phone number
       if (data.phone) {
-        const digits = String(data.phone).replace(/\D/g, '');
-        let formattedPhone = '+1868';
-        if (digits.length > 0) {
-          formattedPhone += ' ';
-          if (digits.length > 3) {
-            formattedPhone += `${digits.substring(0, 3)}-${digits.substring(3, 7)}`;
-          } else {
-            formattedPhone += digits.substring(0, 7);
-          }
-        }
-        setPhone(formattedPhone);
+        const cleanedPhone = String(data.phone).replace(/\D/g, '');
+        setPhone(cleanedPhone.substring(cleanedPhone.length - 7));
       } else {
-        setPhone('+1868');
+        setPhone('');
       }
     }
     setLoading(false);
   }, [navigate, toast]);
 
   useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        getProfile();
+      } else {
+        // Handle case where user logs out or session expires
+        // For now, we can just navigate to auth page or clear profile data
+        navigate('/auth');
+      }
+    });
+
+    // Initial load
     getProfile();
-  }, [getProfile]);
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [getProfile, navigate]);
 
   useEffect(() => {
     // Min 1 Cap letter
@@ -134,17 +141,27 @@ const MemberProfile = () => {
       return;
     }
 
-    const cleanedPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
+    if (phone.length !== 7) {
+      toast({ title: 'Error', description: 'Phone number must be 7 digits.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
 
-    const { error } = await supabase
+    const fullPhoneNumber = `+1868${phone}`;
+
+    console.log("Saving profile with:", { userId, firstName, lastName, phone: fullPhoneNumber });
+
+    const { data, error } = await supabase
       .from('profiles')
-      .update({ first_name: firstName, last_name: lastName, phone: cleanedPhone })
+      .update({ first_name: firstName, last_name: lastName, phone: fullPhoneNumber })
       .eq('id', userId);
 
     if (error) {
+      console.error("Supabase save error:", error);
       toast({ title: 'Error saving profile', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: 'Profile updated successfully.' });
+      getProfile(); // Refresh profile data
     }
     setLoading(false);
   };
@@ -172,25 +189,51 @@ const MemberProfile = () => {
 
     setLoading(true);
 
+    // Log the password values before sending to Supabase
+    console.log('Password change attempt:', {
+      newPasswordLength: newPassword.length,
+      confirmNewPasswordLength: confirmNewPassword.length,
+      passwordsMatch: newPassword === confirmNewPassword,
+      hasCapital,
+      hasMinLength,
+      hasNumber,
+      hasSpecialChar,
+      isGoogleUser,
+      isEmailUser
+    });
+
     // Re-authenticate user with old password only if they have an email password
     if (!isGoogleUser || isEmailUser) {
+      console.log('Attempting re-authentication with old password for email user');
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email, // Assuming email is available in state
         password: oldPassword,
       });
 
       if (signInError) {
+        console.error('Re-authentication error:', signInError);
         toast({ title: 'Error', description: 'Incorrect old password.', variant: 'destructive' });
         setLoading(false);
         return;
       }
     }
 
+    // Ensure session is still valid before updating password
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (!currentSession) {
+      toast({ title: 'Error', description: 'Authentication session missing. Please log in again.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    console.log('Updating password for user:', currentSession.user.id);
+    
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
 
     if (error) {
+      console.error('Password update error:', error);
       toast({ title: 'Error changing password', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: 'Password updated successfully.' });
@@ -247,14 +290,18 @@ const MemberProfile = () => {
             </div>
             <div className="grid gap-2">
               <label htmlFor="phone">Phone Number</label>
-              <Input
-                id="phone"
-                type="text"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder="+1868 XXX-XXXX"
-                maxLength={14}
-              />
+              <div className="flex items-center">
+                <span className="mr-2">+1 (868)</span>
+                <Input
+                  id="phone"
+                  type="text"
+                  value={formatPhoneNumber(phone)}
+                  onChange={handlePhoneChange}
+                  placeholder="XXX-XXXX"
+                  maxLength={8} // 7 digits + 1 hyphen
+                  className="flex-grow"
+                />
+              </div>
             </div>
             <Button onClick={handleSave} className="w-full">
               Save Changes
@@ -282,9 +329,7 @@ const MemberProfile = () => {
             )}
             {isEmailUser && (
               <div className="flex flex-col items-center">
-                <svg className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Mail className="h-8 w-8 text-gray-500" />
                 <span className="text-sm text-gray-500">Email</span>
               </div>
             )}
@@ -300,7 +345,7 @@ const MemberProfile = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-          {(!isGoogleUser || isEmailUser) && (
+          {(!isGoogleUser || hasEmailPassword) && (
             <div className="grid gap-2">
               <label htmlFor="oldPassword">Old Password</label>
               <div className="relative">
@@ -400,7 +445,7 @@ const MemberProfile = () => {
               </p>
             </div>
             <Button onClick={handleChangePassword} className="w-full">
-              {(!isGoogleUser || isEmailUser) ? "Change Password" : "Create Password"}
+              {(!isGoogleUser || hasEmailPassword) ? "Change Password" : "Create Password"}
             </Button>
           </div>
         </CardContent>
