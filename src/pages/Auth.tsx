@@ -441,9 +441,6 @@ const Auth = () => {
                         </div>
                       </div>
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Creating Account..." : "Create Account"}
-                    </Button>
                     <div className="grid gap-2 text-sm">
                       <p className={`flex items-center ${hasCapital ? 'text-green-500' : 'text-red-500'}`}>
                         <CheckCircle className={`h-4 w-4 mr-2 ${hasCapital ? 'text-green-500' : 'text-red-500'}`} />
@@ -466,6 +463,9 @@ const Auth = () => {
                         New Passwords Match
                       </p>
                     </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Creating Account..." : "Create Account"}
+                    </Button>
                     <Button
                       variant="outline"
                       className="w-full flex items-center justify-center gap-2"

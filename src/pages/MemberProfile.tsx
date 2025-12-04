@@ -226,16 +226,9 @@ const MemberProfile = () => {
 
     console.log('Updating password for user:', currentSession.user.id);
     
-    console.log('Attempting to update password via MemberProfile...');
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
-
-    if (error) {
-      console.error('Supabase password update error in MemberProfile:', error);
-    } else {
-      console.log('Supabase password update successful in MemberProfile.');
-    }
 
     if (error) {
       console.error('Password update error:', error);
