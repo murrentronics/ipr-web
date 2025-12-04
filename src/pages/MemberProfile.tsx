@@ -229,6 +229,7 @@ const MemberProfile = () => {
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
+    console.log('Supabase password update result error:', error);
 
     if (error) {
       console.error('Password update error:', error);
