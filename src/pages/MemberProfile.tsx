@@ -66,18 +66,20 @@ const MemberProfile = () => {
     const isGoogle = session.user.app_metadata?.provider === 'google' || session.user.identities?.some(identity => identity.provider === 'google');
     // A user has an email/password if their initial sign-in was email, or if they have an 'email' identity
     const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
-    // Additionally, if the user has an email and is not exclusively a Google user, they likely have an email/password.
-    // This handles cases where a Google user might add an email/password later.
-    setHasEmailPassword(isEmail || (session.user.email && !isGoogle));
+    
+    // Check localStorage for password set flag (for Google users who created a password)
+    const hasPasswordFlag = localStorage.getItem(`hasPassword_${session.user.id}`) === 'true';
+    
+    // User has email password if they signed up with email OR they're a Google user who set a password
+    const hasEmailPwd = isEmail || hasPasswordFlag;
+    
+    setHasEmailPassword(hasEmailPwd);
     setIsGoogleUser(isGoogle);
-      setIsEmailUser(isEmail || (session.user.email && !isGoogle));
-      console.log("isGoogleUser:", isGoogle);
-      console.log("isEmailUser:", isEmail || (session.user.email && !isGoogle));
-      console.log("Debug - session.user.app_metadata.provider:", session.user.app_metadata?.provider);
-      console.log("Debug - session.user.identities:", session.user.identities);
-      console.log("Debug - isGoogle (calculated):", isGoogle);
-      console.log("Debug - isEmail (calculated):", isEmail);
-      console.log("Debug - hasEmailPassword (state value):", isEmail || (session.user.email && !isGoogle));
+    setIsEmailUser(hasEmailPwd);
+    
+    console.log("isGoogleUser:", isGoogle);
+    console.log("isEmailUser:", hasEmailPwd);
+    console.log("hasPasswordFlag from localStorage:", hasPasswordFlag);
 
     const { data, error } = await supabase
       .from('profiles')
@@ -239,6 +241,10 @@ const MemberProfile = () => {
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
+      // Store flag in localStorage to persist password status
+      if (userId) {
+        localStorage.setItem(`hasPassword_${userId}`, 'true');
+      }
       // Update state to reflect that user now has email/password login
       setHasEmailPassword(true);
       setIsEmailUser(true);
