@@ -68,6 +68,7 @@ const MemberProfile = () => {
     const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
     
     // Check user_metadata for password set flag (persists across devices/sessions)
+    console.log("session.user.user_metadata:", session.user.user_metadata);
     const hasPasswordFlag = session.user.user_metadata?.has_password === true;
     
     // User has email password if they signed up with email OR they're a Google user who set a password
@@ -228,8 +229,10 @@ const MemberProfile = () => {
 
     console.log('Updating password for user:', currentSession.user.id);
     
+    // Update password AND has_password flag in a single call to avoid race conditions
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
+      data: { has_password: true }
     });
     console.log('Supabase password update result error:', error);
 
@@ -237,11 +240,6 @@ const MemberProfile = () => {
       console.error('Password update error:', error);
       toast({ title: 'Error changing password', description: error.message, variant: 'destructive' });
     } else {
-      // Store has_password flag in user_metadata (persists across devices/sessions)
-      await supabase.auth.updateUser({
-        data: { has_password: true }
-      });
-      
       toast({ title: 'Success', description: 'Password updated successfully.' });
       setOldPassword('');
       setNewPassword('');
