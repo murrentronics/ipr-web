@@ -1,0 +1,143 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20251205094348
+Username: DESKTOP-CGGC0RL\Trecia
+RunAs User: DESKTOP-CGGC0RL\Trecia
+Configuration Name: 
+Machine: DESKTOP-CGGC0RL (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\Trecia\AppData\Local\Programs\Trae\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 13468
+PSVersion: 5.1.19041.6456
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.6456
+BuildVersion: 10.0.19041.6456
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is deploy_log.txt
+Starting deployment process...
+Navigating to project directory: C:\Users\Trecia\IPR-Web\ipr-web
+Running npm run build...
+onfiguration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 39.99s
+NPM build completed successfully.
+Ensuring remote public_html directory exists...
+
+Cleaning up remote public_html directory contents...
+
+Transferring all dist folder contents to SiteGround via scp...
+
+All dist folder contents transferred successfully.
+Transferring .htaccess file to SiteGround via scp...
+
+.htaccess file transferred.
+Clearing remote OPcache...
+
+Remote OPcache cleared successfully.
+Deployment completed successfully!
+**********************
+Windows PowerShell transcript end
+End time: 20251205094449
+**********************
+**********************
+Windows PowerShell transcript start
+Start time: 20251205094810
+Username: DESKTOP-CGGC0RL\Trecia
+RunAs User: DESKTOP-CGGC0RL\Trecia
+Configuration Name: 
+Machine: DESKTOP-CGGC0RL (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\Trecia\AppData\Local\Programs\Trae\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 13468
+PSVersion: 5.1.19041.6456
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.6456
+BuildVersion: 10.0.19041.6456
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is deploy_log.txt
+Starting deployment process...
+Navigating to project directory: C:\Users\Trecia\IPR-Web\ipr-web
+Running npm run build...
+
+NPM build completed successfully.
+Ensuring remote public_html directory exists...
+
+Cleaning up remote public_html directory contents...
+
+Transferring all dist folder contents to SiteGround via scp...
+
+All dist folder contents transferred successfully.
+Transferring .htaccess file to SiteGround via scp...
+
+.htaccess file transferred.
+Clearing remote Memcached...
+
+C:\Users\Trecia\IPR-Web\ipr-web\deploy.ps1 : Failed to clear remote Memcached. SSH exit code: 2
+At line:1 char:1
++ .\deploy.ps1
++ ~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,deploy.ps1
+C:\Users\Trecia\IPR-Web\ipr-web\deploy.ps1 : Failed to clear remote Memcached. SSH exit
+code: 2
+At line:1 char:1
++ .\deploy.ps1
++ ~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,deploy.
+   ps1
+
+Remote Memcached cleared successfully.
+Deployment completed successfully!
+**********************
+Windows PowerShell transcript end
+End time: 20251205094911
+**********************
+**********************
+Windows PowerShell transcript start
+Start time: 20251205094928
+Username: DESKTOP-CGGC0RL\Trecia
+RunAs User: DESKTOP-CGGC0RL\Trecia
+Configuration Name: 
+Machine: DESKTOP-CGGC0RL (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\Trecia\AppData\Local\Programs\Trae\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 13468
+PSVersion: 5.1.19041.6456
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.6456
+BuildVersion: 10.0.19041.6456
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is deploy_log.txt
+Starting deployment process...
+Navigating to project directory: C:\Users\Trecia\IPR-Web\ipr-web
+Running npm run build...
+
+NPM build completed successfully.
+Ensuring remote public_html directory exists...
+
+Cleaning up remote public_html directory contents...
+
+Transferring all dist folder contents to SiteGround via scp...
+
+All dist folder contents transferred successfully.
+Transferring .htaccess file to SiteGround via scp...
+
+.htaccess file transferred.
+Clearing remote Memcached...
+
+Remote Memcached cleared successfully.
+Deployment completed successfully!
+**********************
+Windows PowerShell transcript end
+End time: 20251205095029
+**********************
