@@ -239,8 +239,9 @@ const MemberProfile = () => {
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
-      // Re-fetch profile to update login methods
-      getProfile();
+      // Update state to reflect that user now has email/password login
+      setHasEmailPassword(true);
+      setIsEmailUser(true);
     }
     setLoading(false);
   };
