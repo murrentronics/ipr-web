@@ -67,8 +67,8 @@ const MemberProfile = () => {
     // A user has an email/password if their initial sign-in was email, or if they have an 'email' identity
     const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
     
-    // Check localStorage for password set flag (for Google users who created a password)
-    const hasPasswordFlag = localStorage.getItem(`hasPassword_${session.user.id}`) === 'true';
+    // Check user_metadata for password set flag (persists across devices/sessions)
+    const hasPasswordFlag = session.user.user_metadata?.has_password === true;
     
     // User has email password if they signed up with email OR they're a Google user who set a password
     const hasEmailPwd = isEmail || hasPasswordFlag;
@@ -79,7 +79,7 @@ const MemberProfile = () => {
     
     console.log("isGoogleUser:", isGoogle);
     console.log("isEmailUser:", hasEmailPwd);
-    console.log("hasPasswordFlag from localStorage:", hasPasswordFlag);
+    console.log("hasPasswordFlag from user_metadata:", hasPasswordFlag);
 
     const { data, error } = await supabase
       .from('profiles')
@@ -237,14 +237,15 @@ const MemberProfile = () => {
       console.error('Password update error:', error);
       toast({ title: 'Error changing password', description: error.message, variant: 'destructive' });
     } else {
+      // Store has_password flag in user_metadata (persists across devices/sessions)
+      await supabase.auth.updateUser({
+        data: { has_password: true }
+      });
+      
       toast({ title: 'Success', description: 'Password updated successfully.' });
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
-      // Store flag in localStorage to persist password status
-      if (userId) {
-        localStorage.setItem(`hasPassword_${userId}`, 'true');
-      }
       // Update state to reflect that user now has email/password login
       setHasEmailPassword(true);
       setIsEmailUser(true);
