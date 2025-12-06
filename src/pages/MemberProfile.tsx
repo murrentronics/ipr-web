@@ -252,7 +252,7 @@ const MemberProfile = () => {
   };
 
   if (loading) {
-    return <div>Loading profile...</div>;
+    return <div className="w-full text-center py-12">Loading profile...</div>;
   }
 
   return (

@@ -42,9 +42,7 @@ const Contact = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12">
-          <p>Loading contact information...</p>
-        </div>
+        <p className="w-full text-center py-12">Loading contact information...</p>
       </Layout>
     );
   }
