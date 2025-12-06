@@ -56,7 +56,7 @@ const Contact = () => {
             Contact <span className="text-primary">IPR</span>
           </h1>
           <p className="text-xl text-muted-foreground">
-            Visit our office to deposit funds or get in touch with our team
+            Visit our office to deposit funds or get in touch with our team!
           </p>
         </div>
 
