@@ -405,9 +405,9 @@ export const Layout = ({ children }: LayoutProps) => {
 
       <main className="flex-grow">{children}</main>
 
-      <footer className="border-t border-border bg-card/50 mt-20">
+      <footer className="border-t border-primary bg-primary mt-20">
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-primary-foreground">
             <p className="text-sm">
               © {new Date().getFullYear()} IPR - Investment Property Rentals, a product of T.A.M. General Building & Installations. All rights reserved.
             </p>
