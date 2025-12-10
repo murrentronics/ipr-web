@@ -135,7 +135,7 @@ const HowItWorks = () => {
                     </div>
                     <p className="text-muted-foreground mb-4">
                       For the first group, an initial property will be provided pre-built. For subsequent groups, with all funds deposited, T.A.M. General Building & Installations begins 
-                      construction of a rental property. Also, after construction of each rental property, a new property build begins immediately. This way there will always be a property available for each new active group. The group's pooled investment of 
+                      construction of a rental property. This way there will always be a property available for each new active group. The group's pooled investment of 
                       $250,000 (25 members × $10,000) acts as 10% of the financing, with T.A.M.G.B.I. 
                       financing the remaining 90% to build an investment property large enough 
                       to support the payouts.
