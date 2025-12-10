@@ -131,7 +131,7 @@ const HowItWorks = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-sm font-bold text-primary">STEP 4</span>
-                      <h3 className="text-2xl font-bold">Construction Begins</h3>
+                      <h3 className="text-2xl font-bold">Group Becomes Active</h3>
                     </div>
                     <p className="text-muted-foreground mb-4">
                       For the first group, an initial property will be provided pre-built. For subsequent groups, with all funds deposited, T.A.M. General Building & Installations begins 
