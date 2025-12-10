@@ -118,7 +118,7 @@ export const Layout = ({ children }: LayoutProps) => {
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-xl">IPR</span>
               </div>
-              <span className="font-bold text-xl text-foreground">Investment Property Rentals</span>
+              <span className="font-bold text-xl text-foreground hidden md:inline">Investment Property Rentals</span>
             </Link>
 
 
