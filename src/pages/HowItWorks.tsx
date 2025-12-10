@@ -169,7 +169,7 @@ const HowItWorks = () => {
                       <h3 className="text-2xl font-bold">Receive Monthly Income</h3>
                     </div>
                     <p className="text-muted-foreground mb-4">
-                      Once the property is completed and rented out, each member receives $1,800 
+                      Once the group becomes active, meaning all members paid within the 3-day period, payouts start the very next month and each member receives $1,800 
                       per month for 60 consecutive months (5 years). That's a total of $108,000 
                       per contract—nearly 11x your initial investment!
                     </p>
