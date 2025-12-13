@@ -158,7 +158,9 @@ const MemberProfile = () => {
     }
 
     // Check if phone number is being changed and original phone exists
+    console.log('Phone change check:', { phone, originalPhone });
     const phoneChanged = phone !== originalPhone && originalPhone !== '';
+    console.log('phoneChanged:', phoneChanged);
     
     if (phoneChanged) {
       // Phone is changing - require verification
