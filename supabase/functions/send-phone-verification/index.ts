@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
       const code = generateCode();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
-      console.log(`Generating verification code for ${email}, new phone: ${newPhone}`);
+
 
       // Delete any existing codes for this email
       await supabase
@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
       if (insertError) {
-        console.error("Error inserting verification code:", insertError);
+
         return new Response(
           JSON.stringify({ error: "Failed to generate verification code" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -123,13 +123,13 @@ const handler = async (req: Request): Promise<Response> => {
       })) as unknown as { data: ResendEmailData | null; error: ResendEmailError | null };
 
       if (error) {
-        console.error("Error sending email:", error);
+
         return new Response(
           JSON.stringify({ error: "Failed to send verification email" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      console.log("Email sent successfully:", data);
+
 
       return new Response(
         JSON.stringify({ success: true, message: "Verification code sent" }),
@@ -146,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log(`Verifying code for ${email}`);
+
 
       // Get the verification record
       const { data: verificationData, error: fetchError } = await supabase
@@ -157,7 +157,7 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (fetchError || !verificationData) {
-        console.error("Verification code not found or invalid:", fetchError);
+
         return new Response(
           JSON.stringify({ error: "Invalid verification code" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -187,7 +187,7 @@ const handler = async (req: Request): Promise<Response> => {
         .delete()
         .eq("id", verificationData.id);
 
-      console.log(`Verification successful for ${email}, new phone: ${newPhone}`);
+
 
       return new Response(
         JSON.stringify({ success: true, newPhone }),
@@ -202,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
   } catch (error: unknown) {
-    console.error("Error in send-phone-verification function:", error);
+
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "An unknown error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
