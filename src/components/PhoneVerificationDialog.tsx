@@ -34,10 +34,17 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Send code when dialog opens
+  // Send code when dialog opens for the first time
   useEffect(() => {
     if (open && !codeSent) {
       handleSendCode();
+    }
+  }, [open]);
+
+  // Reset codeSent when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setCodeSent(false);
     }
   }, [open]);
 
@@ -201,7 +208,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Verify Phone Number Change</DialogTitle>
+          <DialogTitle>Verify Profile Changes</DialogTitle>
           <DialogDescription>
             Enter the 6-digit verification code sent to your email ({email})
           </DialogDescription>
