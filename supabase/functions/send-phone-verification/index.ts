@@ -1,11 +1,8 @@
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.87.1";
-import { Resend } from "https://esm.sh/resend@1.1.0";
-
-const RESEND_API_KEY = "re_H2YAcBec_8g9xP4rXUA25BD8yBBCePwY6";
+import { serve } from "std/http/server.ts";
+import { createClient } from "supabase-js";
+import { Resend } from "resend";
 
 
-const resend = new Resend(RESEND_API_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://theronm22.sg-host.com",
@@ -17,7 +14,17 @@ interface SendVerificationRequest {
   newPhone: string;
 }
 
-interface VerifyCodeRequest {
+  interface ResendEmailData {
+    id: string;
+  }
+
+  interface ResendEmailError {
+    name: string;
+    message: string;
+    statusCode: number;
+  }
+
+  interface VerifyCodeRequest {
   email: string;
   code: string;
 }
@@ -29,7 +36,7 @@ const generateCode = (): string => {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -80,18 +87,15 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      const RESEND_API_KEY = "re_H2YAcBec_8g9xP4rXUA25BD8yBBCePwY6";
+      const resend = new Resend(RESEND_API_KEY);
+
       // Send email with code using Resend API
-      const emailResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "IPR Verification <onboarding@resend.dev>",
-          to: [email],
-          subject: "Your Phone Number Change Verification Code",
-          html: `
+      const { data, error } = (await resend.emails.send({
+        from: "IPR Verification <onboarding@resend.dev>",
+        to: [email],
+        subject: "Profile Change Verification Code",
+        html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h1 style="color: #333;">Phone Number Change Verification</h1>
               <p>You have requested to change your phone number. Please use the following 6-digit code to verify this change:</p>
@@ -104,20 +108,16 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="color: #999; font-size: 12px;">IPR - Investment Property Rentals</p>
             </div>
           `,
-        }),
-      });
+      })) as unknown as { data: ResendEmailData | null; error: ResendEmailError | null };
 
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        console.error("Error sending email:", errorData);
+      if (error) {
+        console.error("Error sending email:", error);
         return new Response(
           JSON.stringify({ error: "Failed to send verification email" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      const emailData = await emailResponse.json();
-      console.log("Email sent successfully:", emailData);
+      console.log("Email sent successfully:", data);
 
       return new Response(
         JSON.stringify({ success: true, message: "Verification code sent" }),
@@ -189,10 +189,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in send-phone-verification function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "An unknown error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
