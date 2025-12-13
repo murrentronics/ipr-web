@@ -17,7 +17,7 @@ interface PhoneVerificationDialogProps {
   onOpenChange: (open: boolean) => void;
   email: string;
   newPhone: string;
-  onVerified: (newPhone: string) => void;
+  onVerified: () => void;
 }
 
 const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
@@ -167,9 +167,9 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
       if (data?.success) {
         toast({
           title: 'Success',
-          description: 'Phone number verified and updated successfully.',
+          description: 'Profile changes verified and saved successfully.',
         });
-        onVerified(data.newPhone);
+        onVerified();
         onOpenChange(false);
         // Reset state
         setCode(['', '', '', '', '', '']);
