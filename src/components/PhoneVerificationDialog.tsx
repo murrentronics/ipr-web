@@ -5,11 +5,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase';
-import { toast } from '@/components/ui/use-toast';
+} from '@/components/ui/dialog.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { supabase } from '@/integrations/supabase/client.ts';
+import { toast } from '@/hooks/use-toast.ts';
 import { Loader2 } from 'lucide-react';
 
 interface PhoneVerificationDialogProps {
@@ -94,7 +94,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         title: 'Code Sent',
         description: 'A verification code has been sent to your email.',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error sending verification code (catch):', err);
       toast({
         title: 'Error',
@@ -185,7 +185,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         setCode(['', '', '', '', '', '']);
         setCodeSent(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error verifying code:', err);
       toast({
         title: 'Error',
@@ -226,13 +226,13 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
                 {code.map((digit, index) => (
                   <Input
                     key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
+                    ref={(el: HTMLInputElement | null) => (inputRefs.current[index] = el)}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
                     value={digit}
-                    onChange={(e) => handleInputChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(index, e.target.value)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(index, e)}
                     className="w-12 h-12 text-center text-xl font-bold"
                     disabled={loading}
                   />

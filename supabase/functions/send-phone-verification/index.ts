@@ -101,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error("Missing environment variable: RESEND_API_KEY");
       }
       const resend = new Resend(RESEND_API_KEY);
-
+      
       // Send email with code using Resend API
       const { data, error } = (await resend.emails.send({
         from: "IPR Verification <onboarding@resend.dev>",
