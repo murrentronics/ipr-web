@@ -14,8 +14,12 @@ const MemberProfile = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [originalPhone, setOriginalPhone] = useState(''); // Track original phone to detect changes
-  const [pendingPhone, setPendingPhone] = useState(''); // Phone number pending verification
+  const [originalFirstName, setOriginalFirstName] = useState('');
+  const [originalLastName, setOriginalLastName] = useState('');
+  const [originalPhone, setOriginalPhone] = useState('');
+  const [pendingFirstName, setPendingFirstName] = useState('');
+  const [pendingLastName, setPendingLastName] = useState('');
+  const [pendingPhone, setPendingPhone] = useState('');
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,14 +99,18 @@ const MemberProfile = () => {
     if (error) {
       toast({ title: 'Error loading profile', description: error.message, variant: 'destructive' });
     } else if (data) {
-      setFirstName(data.first_name || '');
-      setLastName(data.last_name || '');
+      const fn = data.first_name || '';
+      const ln = data.last_name || '';
+      setFirstName(fn);
+      setLastName(ln);
+      setOriginalFirstName(fn);
+      setOriginalLastName(ln);
       // Format existing phone number
       if (data.phone) {
         const cleanedPhone = String(data.phone).replace(/\D/g, '');
         const formattedPhone = cleanedPhone.substring(cleanedPhone.length - 7);
         setPhone(formattedPhone);
-        setOriginalPhone(formattedPhone); // Store original for comparison
+        setOriginalPhone(formattedPhone);
       } else {
         setPhone('');
         setOriginalPhone('');
@@ -157,54 +165,63 @@ const MemberProfile = () => {
       return;
     }
 
-    // Check if phone number is being changed and original phone exists
-    console.log('Phone change check:', { phone, originalPhone });
-    const phoneChanged = phone !== originalPhone && originalPhone !== '';
-    console.log('phoneChanged:', phoneChanged);
+    // Check if ANY profile field has changed
+    const firstNameChanged = firstName !== originalFirstName;
+    const lastNameChanged = lastName !== originalLastName;
+    const phoneChanged = phone !== originalPhone;
+    const hasAnyChange = firstNameChanged || lastNameChanged || phoneChanged;
     
-    if (phoneChanged) {
-      // Phone is changing - require verification
+    console.log('Profile change check:', { 
+      firstName, originalFirstName, firstNameChanged,
+      lastName, originalLastName, lastNameChanged,
+      phone, originalPhone, phoneChanged,
+      hasAnyChange 
+    });
+    
+    if (hasAnyChange) {
+      // Any change requires verification
+      setPendingFirstName(firstName);
+      setPendingLastName(lastName);
       setPendingPhone(phone);
-      setPhone(originalPhone); // Revert to original until verified
+      // Revert to original values until verified
+      setFirstName(originalFirstName);
+      setLastName(originalLastName);
+      setPhone(originalPhone);
       setShowVerificationDialog(true);
       setLoading(false);
       return;
     }
 
-    console.log("Saving profile with:", { userId, firstName, lastName, phone: phone });
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ first_name: firstName, last_name: lastName, phone: phone })
-      .eq('id', userId);
-
-    if (error) {
-      console.error("Supabase save error:", error);
-      toast({ title: 'Error saving profile', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Success', description: 'Profile updated successfully.' });
-      getProfile(); // Refresh profile data
-    }
+    // No changes detected
+    toast({ title: 'Info', description: 'No changes to save.' });
     setLoading(false);
   };
 
-  const handlePhoneVerified = async (verifiedPhone: string) => {
-    // Phone verified successfully - update in database
+  const handleProfileVerified = async () => {
+    // Verification successful - save all pending changes
     if (!userId) return;
 
     setLoading(true);
     const { error } = await supabase
       .from('profiles')
-      .update({ phone: verifiedPhone })
+      .update({ 
+        first_name: pendingFirstName, 
+        last_name: pendingLastName, 
+        phone: pendingPhone 
+      })
       .eq('id', userId);
 
     if (error) {
-      console.error("Error updating phone:", error);
-      toast({ title: 'Error', description: 'Failed to update phone number.', variant: 'destructive' });
+      console.error("Error updating profile:", error);
+      toast({ title: 'Error', description: 'Failed to update profile.', variant: 'destructive' });
     } else {
-      setPhone(verifiedPhone);
-      setOriginalPhone(verifiedPhone);
-      toast({ title: 'Success', description: 'Phone number updated successfully.' });
+      setFirstName(pendingFirstName);
+      setLastName(pendingLastName);
+      setPhone(pendingPhone);
+      setOriginalFirstName(pendingFirstName);
+      setOriginalLastName(pendingLastName);
+      setOriginalPhone(pendingPhone);
+      toast({ title: 'Success', description: 'Profile updated successfully.' });
     }
     setLoading(false);
   };
@@ -502,7 +519,7 @@ const MemberProfile = () => {
         onOpenChange={setShowVerificationDialog}
         email={email}
         newPhone={pendingPhone}
-        onVerified={handlePhoneVerified}
+        onVerified={handleProfileVerified}
       />
     </div>
   );
