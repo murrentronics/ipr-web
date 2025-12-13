@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.window"],
+    "types": ["npm:@types/node"]
+  },
+  "imports": {
+    "std/": "https://deno.land/std@0.203.0/",
+    "supabase-js": "npm:@supabase/supabase-js@^2.0.0",
+    "resend": "npm:resend@^6.0.0"
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write --watch index.ts"
+  },
+  "nodeModulesDir": true
+}
