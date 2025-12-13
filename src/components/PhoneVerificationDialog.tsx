@@ -51,14 +51,17 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
 
   const handleSendCode = async () => {
     setSendingCode(true);
+    console.log('Sending verification code via edge function', { email, newPhone });
     try {
       const { data, error } = await supabase.functions.invoke('send-phone-verification?action=send', {
         body: { email, newPhone },
       });
 
+      console.log('send-phone-verification send result:', { data, error });
+
       // Check for Supabase function invocation error
       if (error) {
-        console.error('Error sending verification code:', error);
+        console.error('Error sending verification code (invoke error):', error);
         toast({
           title: 'Error',
           description: error.message || 'Failed to send verification code',
@@ -69,7 +72,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
 
       // Check for error in the response body
       if (data?.error) {
-        console.error('Error sending verification code:', data.error);
+        console.error('Error sending verification code (function response error):', data.error);
         toast({
           title: 'Error',
           description: data.error,
@@ -85,7 +88,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         description: 'A verification code has been sent to your email.',
       });
     } catch (err: any) {
-      console.error('Error sending verification code:', err);
+      console.error('Error sending verification code (catch):', err);
       toast({
         title: 'Error',
         description: 'Failed to send verification code. Please try again.',
