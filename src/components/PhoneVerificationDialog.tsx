@@ -30,7 +30,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   const [code, setCode] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
+  const [_codeSent, setCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const hasSentCodeRef = useRef(false); // New ref to track if code has been sent
@@ -39,14 +39,6 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   useEffect(() => {
     if (open && !hasSentCodeRef.current) { // Use the ref here
       handleSendCode();
-    }
-  }, [open]);
-
-  // Reset codeSent and hasSentCodeRef when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setCodeSent(false);
-      hasSentCodeRef.current = false; // Reset the ref when dialog closes
     }
   }, [open]);
 
@@ -204,6 +196,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
     onOpenChange(false);
     setCode(['', '', '', '', '', '']);
     setCodeSent(false);
+    hasSentCodeRef.current = false; // Reset the ref when dialog closes
     setCountdown(0);
   };
 
