@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EyeIcon, EyeOffIcon, CheckCircle, XCircle, Mail } from 'lucide-react';
+import PhoneVerificationDialog from '@/components/PhoneVerificationDialog';
 
 const MemberProfile = () => {
   const navigate = useNavigate();
@@ -13,6 +14,9 @@ const MemberProfile = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [originalPhone, setOriginalPhone] = useState(''); // Track original phone to detect changes
+  const [pendingPhone, setPendingPhone] = useState(''); // Phone number pending verification
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
@@ -96,9 +100,12 @@ const MemberProfile = () => {
       // Format existing phone number
       if (data.phone) {
         const cleanedPhone = String(data.phone).replace(/\D/g, '');
-        setPhone(cleanedPhone.substring(cleanedPhone.length - 7));
+        const formattedPhone = cleanedPhone.substring(cleanedPhone.length - 7);
+        setPhone(formattedPhone);
+        setOriginalPhone(formattedPhone); // Store original for comparison
       } else {
         setPhone('');
+        setOriginalPhone('');
       }
     }
     setLoading(false);
@@ -150,6 +157,18 @@ const MemberProfile = () => {
       return;
     }
 
+    // Check if phone number is being changed and original phone exists
+    const phoneChanged = phone !== originalPhone && originalPhone !== '';
+    
+    if (phoneChanged) {
+      // Phone is changing - require verification
+      setPendingPhone(phone);
+      setPhone(originalPhone); // Revert to original until verified
+      setShowVerificationDialog(true);
+      setLoading(false);
+      return;
+    }
+
     console.log("Saving profile with:", { userId, firstName, lastName, phone: phone });
 
     const { data, error } = await supabase
@@ -163,6 +182,27 @@ const MemberProfile = () => {
     } else {
       toast({ title: 'Success', description: 'Profile updated successfully.' });
       getProfile(); // Refresh profile data
+    }
+    setLoading(false);
+  };
+
+  const handlePhoneVerified = async (verifiedPhone: string) => {
+    // Phone verified successfully - update in database
+    if (!userId) return;
+
+    setLoading(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ phone: verifiedPhone })
+      .eq('id', userId);
+
+    if (error) {
+      console.error("Error updating phone:", error);
+      toast({ title: 'Error', description: 'Failed to update phone number.', variant: 'destructive' });
+    } else {
+      setPhone(verifiedPhone);
+      setOriginalPhone(verifiedPhone);
+      toast({ title: 'Success', description: 'Phone number updated successfully.' });
     }
     setLoading(false);
   };
@@ -455,6 +495,13 @@ const MemberProfile = () => {
           </div>
         </CardContent>
       </Card>
+      <PhoneVerificationDialog
+        open={showVerificationDialog}
+        onOpenChange={setShowVerificationDialog}
+        email={email}
+        newPhone={pendingPhone}
+        onVerified={handlePhoneVerified}
+      />
     </div>
   );
 };
