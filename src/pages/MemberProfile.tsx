@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase';
-import { toast } from '@/components/ui/use-toast';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client.ts';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+
+interface UserIdentity {
+  provider: string;
+  id?: string;
+  user_id?: string;
+  identity_data?: Record<string, unknown>;
+  created_at?: string;
+  last_sign_in_at?: string;
+  email?: string;
+}
+import { toast } from '@/hooks/use-toast.ts';
+import { Input } from '@/components/ui/input.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { EyeIcon, EyeOffIcon, CheckCircle, XCircle, Mail } from 'lucide-react';
-import PhoneVerificationDialog from '@/components/PhoneVerificationDialog';
+import PhoneVerificationDialog from "@/components/PhoneVerificationDialog.tsx";
 
 const MemberProfile = () => {
   const navigate = useNavigate();
@@ -71,13 +82,13 @@ const MemberProfile = () => {
     console.log("Supabase session user identities:", session.user.identities);
 
     // Determine login methods
-    const isGoogle = session.user.app_metadata?.provider === 'google' || session.user.identities?.some(identity => identity.provider === 'google');
+    const isGoogle = Boolean(session.user.app_metadata?.provider === 'google' || session.user.identities?.some((identity: UserIdentity) => identity.provider === 'google'));
     // A user has an email/password if their initial sign-in was email, or if they have an 'email' identity
-    const isEmail = session.user.app_metadata?.provider === 'email' || session.user.identities?.some(identity => identity.provider === 'email');
+    const isEmail = Boolean(session.user.app_metadata?.provider === 'email' || session.user.identities?.some((identity: UserIdentity) => identity.provider === 'email'));
     
     // Check user_metadata for password set flag (persists across devices/sessions)
     console.log("session.user.user_metadata:", session.user.user_metadata);
-    const hasPasswordFlag = session.user.user_metadata?.has_password === true;
+    const hasPasswordFlag = Boolean(session.user.user_metadata?.has_password === true);
     
     // User has email password if they signed up with email OR they're a Google user who set a password
     const hasEmailPwd = isEmail || hasPasswordFlag;
@@ -120,7 +131,7 @@ const MemberProfile = () => {
   }, [navigate, toast]);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (session) {
         getProfile();
       } else {
@@ -151,7 +162,7 @@ const MemberProfile = () => {
     setPasswordsMatch(newPassword === confirmNewPassword && newPassword !== '');
   }, [newPassword, confirmNewPassword]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setLoading(true);
     if (!userId) {
       toast({ title: 'Error', description: 'User not logged in.', variant: 'destructive' });
@@ -338,7 +349,7 @@ const MemberProfile = () => {
                 id="firstName"
                 type="text"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}
                 placeholder="First Name"
               />
             </div>
@@ -348,7 +359,7 @@ const MemberProfile = () => {
                 id="lastName"
                 type="text"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
                 placeholder="Last Name"
               />
             </div>
@@ -417,7 +428,7 @@ const MemberProfile = () => {
                   id="oldPassword"
                   type={showOldPassword ? "text" : "password"}
                   value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOldPassword(e.target.value)}
                   placeholder="Old Password"
                 />
                 <Button
@@ -443,7 +454,7 @@ const MemberProfile = () => {
                   id="newPassword"
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
                   placeholder="New Password"
                 />
                 <Button
@@ -468,7 +479,7 @@ const MemberProfile = () => {
                   id="confirmNewPassword"
                   type={showConfirmNewPassword ? "text" : "password"}
                   value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmNewPassword(e.target.value)}
                   placeholder="Confirm New Password"
                 />
                 <Button

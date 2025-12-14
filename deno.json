@@ -6,7 +6,8 @@
     "@/components/ui/": "./src/components/ui/",
     "@/integrations/supabase/": "./src/integrations/supabase/",
     "@/lib/utils": "./src/lib/utils.ts",
-    "@/hooks/": "./src/hooks/"
+    "@/hooks/": "./src/hooks/",
+    "@/components/": "./src/components/"
   },
   "compilerOptions": {
     "lib": ["deno.window", "deno.unstable", "dom"],
