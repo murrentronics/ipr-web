@@ -82,7 +82,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         title: 'Code Sent',
         description: 'A verification code has been sent to your email.',
       });
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
 
       toast({
         title: 'Error',
@@ -173,7 +173,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         setCode(['', '', '', '', '', '']);
         setCodeSent(false);
       }
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
 
       toast({
         title: 'Error',

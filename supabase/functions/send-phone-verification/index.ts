@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
       const resend = new Resend(RESEND_API_KEY);
       
       // Send email with code using Resend API
-      const { data, error } = (await resend.emails.send({
+      const { data: _data, error } = (await resend.emails.send({
         from: "IPR Verification <onboarding@resend.dev>",
         to: [email],
         subject: "Profile Change Verification Code",
