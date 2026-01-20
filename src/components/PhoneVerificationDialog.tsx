@@ -35,7 +35,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Reset dialog state when opened
+  // Reset dialog state and auto-send code when opened
   useEffect(() => {
     if (!open) return;
     setCode(['', '', '', '', '', '']);
@@ -43,7 +43,58 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
     setSendingCode(false);
     setCodeSent(false);
     setCountdown(0);
-  }, [open]);
+    
+    // Auto-send verification code on open
+    const sendCode = async () => {
+      setSendingCode(true);
+      console.log('Auto-sending verification code via edge function', { email, newPhone });
+      try {
+        const { data, error } = await supabase.functions.invoke('send-phone-verification?action=send', {
+          body: { email, newPhone },
+        });
+        console.log('send-phone-verification send result:', { data, error });
+
+        if (error) {
+          console.error('Error sending verification code (invoke error):', error);
+          toast({
+            title: 'Error',
+            description: error.message || 'Failed to send verification code',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        if (data?.error) {
+          console.error('Error sending verification code (function response error):', data.error);
+          toast({
+            title: 'Error',
+            description: data.error,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        setCodeSent(true);
+        setCountdown(60);
+        toast({
+          title: 'Code Sent',
+          description: 'A verification code has been sent to your email.',
+        });
+        setTimeout(() => inputRefs.current[0]?.focus(), 0);
+      } catch (err: unknown) {
+        console.error('Error sending verification code (catch):', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to send verification code. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setSendingCode(false);
+      }
+    };
+    
+    sendCode();
+  }, [open, email, newPhone, toast]);
 
   // Countdown timer for resend
   useEffect(() => {
