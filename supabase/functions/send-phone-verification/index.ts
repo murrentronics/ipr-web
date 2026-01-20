@@ -5,7 +5,7 @@ import { Resend } from "resend";
 
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://theronm22.sg-host.com",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
@@ -54,10 +54,18 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const url = new URL(req.url);
-    const action = url.searchParams.get("action");
+    let action = url.searchParams.get("action");
+    
+    // Parse body to get action if not in query params
+    const body = await req.json();
+    if (!action && body.action) {
+      action = body.action;
+    }
+    
+    console.log('Edge function called with action:', action, 'body:', body);
 
     if (action === "send") {
-      const { email, newPhone }: SendVerificationRequest = await req.json();
+      const { email, newPhone } = body as SendVerificationRequest;
 
       if (!email || !newPhone) {
         return new Response(
@@ -137,7 +145,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
 
     } else if (action === "verify") {
-      const { email, code }: VerifyCodeRequest = await req.json();
+      const { email, code } = body as VerifyCodeRequest;
 
       if (!email || !code) {
         return new Response(

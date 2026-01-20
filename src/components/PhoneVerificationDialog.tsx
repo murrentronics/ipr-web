@@ -35,66 +35,65 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Reset dialog state and auto-send code when opened
+  // Auto-send code when dialog opens
   useEffect(() => {
     if (!open) return;
+    
+    // Reset state
     setCode(['', '', '', '', '', '']);
     setLoading(false);
-    setSendingCode(false);
     setCodeSent(false);
     setCountdown(0);
     
-    // Auto-send verification code on open
-    const sendCode = async () => {
-      setSendingCode(true);
-      console.log('Auto-sending verification code via edge function', { email, newPhone });
-      try {
-        const { data, error } = await supabase.functions.invoke('send-phone-verification?action=send', {
-          body: { email, newPhone },
-        });
-        console.log('send-phone-verification send result:', { data, error });
+    // Auto-send verification code
+    setSendingCode(true);
+    console.log('Auto-sending verification code via edge function', { email, newPhone });
+    
+    supabase.functions.invoke('send-phone-verification', {
+      body: { email, newPhone, action: 'send' },
+    }).then(({ data, error }) => {
+      console.log('send-phone-verification send result:', { data, error });
 
-        if (error) {
-          console.error('Error sending verification code (invoke error):', error);
-          toast({
-            title: 'Error',
-            description: error.message || 'Failed to send verification code',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        if (data?.error) {
-          console.error('Error sending verification code (function response error):', data.error);
-          toast({
-            title: 'Error',
-            description: data.error,
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        setCodeSent(true);
-        setCountdown(60);
-        toast({
-          title: 'Code Sent',
-          description: 'A verification code has been sent to your email.',
-        });
-        setTimeout(() => inputRefs.current[0]?.focus(), 0);
-      } catch (err: unknown) {
-        console.error('Error sending verification code (catch):', err);
+      if (error) {
+        console.error('Error sending verification code (invoke error):', error);
         toast({
           title: 'Error',
-          description: 'Failed to send verification code. Please try again.',
+          description: error.message || 'Failed to send verification code',
           variant: 'destructive',
         });
-      } finally {
         setSendingCode(false);
+        return;
       }
-    };
-    
-    sendCode();
-  }, [open, email, newPhone, toast]);
+
+      if (data?.error) {
+        console.error('Error sending verification code (function response error):', data.error);
+        toast({
+          title: 'Error',
+          description: data.error,
+          variant: 'destructive',
+        });
+        setSendingCode(false);
+        return;
+      }
+
+      setCodeSent(true);
+      setCountdown(60);
+      setSendingCode(false);
+      toast({
+        title: 'Code Sent',
+        description: 'Check your email for the 6-digit verification code.',
+      });
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    }).catch((err: unknown) => {
+      console.error('Error sending verification code (catch):', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to send verification code. Please try again.',
+        variant: 'destructive',
+      });
+      setSendingCode(false);
+    });
+  }, [open, email, newPhone]);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -106,17 +105,16 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
 
   const handleSendCode = async () => {
     setSendingCode(true);
+    console.log('Resending verification code via edge function', { email, newPhone });
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-phone-verification?action=send', {
-        body: { email, newPhone },
+      const { data, error } = await supabase.functions.invoke('send-phone-verification', {
+        body: { email, newPhone, action: 'send' },
       });
 
+      console.log('Resend result:', { data, error });
 
-
-      // Check for Supabase function invocation error
       if (error) {
-
         toast({
           title: 'Error',
           description: error.message || 'Failed to send verification code',
@@ -125,9 +123,7 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         return;
       }
 
-      // Check for error in the response body
       if (data?.error) {
-
         toast({
           title: 'Error',
           description: data.error,
@@ -137,16 +133,13 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
       }
 
       setCodeSent(true);
-      setCountdown(60); // 60 second cooldown for resend
+      setCountdown(60);
       toast({
         title: 'Code Sent',
-        description: 'A verification code has been sent to your email.',
+        description: 'Check your email for the 6-digit verification code.',
       });
-      // Focus the first digit input once the code is sent
-      setTimeout(() => inputRefs.current[0]?.focus(), 0);
-
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch (_err: unknown) {
-
       toast({
         title: 'Error',
         description: 'Failed to send verification code. Please try again.',
@@ -202,8 +195,8 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-phone-verification?action=verify', {
-        body: { email, code: fullCode },
+      const { data, error } = await supabase.functions.invoke('send-phone-verification', {
+        body: { email, code: fullCode, action: 'verify' },
       });
 
       if (error) {
