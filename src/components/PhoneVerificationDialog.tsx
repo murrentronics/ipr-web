@@ -30,11 +30,20 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   const [code, setCode] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
-  const [_codeSent, setCodeSent] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
 
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Reset dialog state when opened
+  useEffect(() => {
+    if (!open) return;
+    setCode(['', '', '', '', '', '']);
+    setLoading(false);
+    setSendingCode(false);
+    setCodeSent(false);
+    setCountdown(0);
+  }, [open]);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -82,6 +91,9 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         title: 'Code Sent',
         description: 'A verification code has been sent to your email.',
       });
+      // Focus the first digit input once the code is sent
+      setTimeout(() => inputRefs.current[0]?.focus(), 0);
+
     } catch (_err: unknown) {
 
       toast({
@@ -208,6 +220,19 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
               <Loader2 className="h-5 w-5 animate-spin" />
               <span>Sending verification code...</span>
             </div>
+          ) : !codeSent ? (
+            <div className="flex w-full flex-col items-center gap-3">
+              <Button
+                onClick={handleSendCode}
+                disabled={sendingCode || loading}
+                className="w-full"
+              >
+                Send Code
+              </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                We’ll email a 6-digit code to <span className="font-medium">{email}</span>.
+              </p>
+            </div>
           ) : (
             <>
               <div className="flex gap-2" onPaste={handlePaste}>
@@ -219,15 +244,19 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
                     inputMode="numeric"
                     maxLength={1}
                     value={digit}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(index, e.target.value)}
-                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(index, e)}
-                    className="w-12 h-12 text-center text-xl font-bold"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleInputChange(index, e.target.value)
+                    }
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
+                      handleKeyDown(index, e)
+                    }
+                    className="h-12 w-12 text-center text-xl font-bold"
                     disabled={loading}
                   />
                 ))}
               </div>
 
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex w-full flex-col items-center gap-2">
                 <Button
                   onClick={handleVerify}
                   disabled={loading || code.join('').length !== 6}
@@ -246,12 +275,10 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
                 <Button
                   variant="ghost"
                   onClick={handleSendCode}
-                  disabled={sendingCode || countdown > 0}
+                  disabled={sendingCode || loading || countdown > 0}
                   className="text-sm"
                 >
-                  {countdown > 0
-                    ? `Resend code in ${countdown}s`
-                    : 'Resend verification code'}
+                  {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend code'}
                 </Button>
               </div>
             </>
