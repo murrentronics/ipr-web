@@ -4,6 +4,17 @@ import { Resend } from "resend";
 
 
 
+const allowedOrigins = [
+  "https://ipr-web.lovable.app",
+  "https://theronm22.sg-host.com",
+];
+
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin": origin && allowedOrigins.some(o => origin.includes(o.replace('https://', ''))) ? origin : allowedOrigins[0],
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+});
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
