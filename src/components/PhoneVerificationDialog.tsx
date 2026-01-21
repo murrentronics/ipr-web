@@ -200,7 +200,13 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) handleClose();
+        else onOpenChange(true);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Verify Profile Changes</DialogTitle>

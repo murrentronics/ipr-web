@@ -19,6 +19,7 @@ import AdminWallet from "./pages/AdminWallet";
 import MemberWallet from "./pages/MemberWallet";
 import Messages from "./pages/Messages";
 import { Layout } from "./components/Layout";
+import { AuthUrlCleanup } from "./components/AuthUrlCleanup";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthUrlCleanup />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
