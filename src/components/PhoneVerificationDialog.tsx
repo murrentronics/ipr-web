@@ -35,65 +35,16 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Auto-send code when dialog opens
+  // Reset state when dialog opens
   useEffect(() => {
-    if (!open) return;
-    
-    // Reset state
-    setCode(['', '', '', '', '', '']);
-    setLoading(false);
-    setCodeSent(false);
-    setCountdown(0);
-    
-    // Auto-send verification code
-    setSendingCode(true);
-    console.log('Auto-sending verification code via edge function', { email, newPhone });
-    
-    supabase.functions.invoke('send-phone-verification', {
-      body: { email, newPhone, action: 'send' },
-    }).then(({ data, error }) => {
-      console.log('send-phone-verification send result:', { data, error });
-
-      if (error) {
-        console.error('Error sending verification code (invoke error):', error);
-        toast({
-          title: 'Error',
-          description: error.message || 'Failed to send verification code',
-          variant: 'destructive',
-        });
-        setSendingCode(false);
-        return;
-      }
-
-      if (data?.error) {
-        console.error('Error sending verification code (function response error):', data.error);
-        toast({
-          title: 'Error',
-          description: data.error,
-          variant: 'destructive',
-        });
-        setSendingCode(false);
-        return;
-      }
-
-      setCodeSent(true);
-      setCountdown(60);
+    if (open) {
+      setCode(['', '', '', '', '', '']);
+      setLoading(false);
       setSendingCode(false);
-      toast({
-        title: 'Code Sent',
-        description: 'Check your email for the 6-digit verification code.',
-      });
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
-    }).catch((err: unknown) => {
-      console.error('Error sending verification code (catch):', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to send verification code. Please try again.',
-        variant: 'destructive',
-      });
-      setSendingCode(false);
-    });
-  }, [open, email, newPhone]);
+      setCodeSent(false);
+      setCountdown(0);
+    }
+  }, [open]);
 
   // Countdown timer for resend
   useEffect(() => {
