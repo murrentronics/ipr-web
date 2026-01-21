@@ -56,9 +56,11 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("PROJECT_SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl) {
+      console.error("Missing PROJECT_SUPABASE_URL");
       throw new Error("Missing environment variable: PROJECT_SUPABASE_URL");
     }
     if (!supabaseServiceKey) {
+      console.error("Missing PROJECT_SUPABASE_SERVICE_ROLE_KEY");
       throw new Error("Missing environment variable: PROJECT_SUPABASE_SERVICE_ROLE_KEY");
     }
 
@@ -67,16 +69,29 @@ const handler = async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     let action = url.searchParams.get("action");
     
-    // Parse body to get action if not in query params
-    const body = await req.json();
-    if (!action && body.action) {
-      action = body.action;
+    // Parse body safely - handle case where body might be empty or invalid
+    let body: Record<string, unknown> = {};
+    try {
+      const text = await req.text();
+      if (text) {
+        body = JSON.parse(text);
+      }
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
-    console.log('Edge function called with action:', action, 'body:', body);
+    if (!action && body.action) {
+      action = body.action as string;
+    }
+    
+    console.log('Edge function called with action:', action, 'body:', JSON.stringify(body));
 
     if (action === "send") {
-      const { email, newPhone } = body as SendVerificationRequest;
+      const { email, newPhone } = body as unknown as SendVerificationRequest;
 
       if (!email || !newPhone) {
         return new Response(
@@ -156,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
 
     } else if (action === "verify") {
-      const { email, code } = body as VerifyCodeRequest;
+      const { email, code } = body as unknown as VerifyCodeRequest;
 
       if (!email || !code) {
         return new Response(
