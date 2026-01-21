@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { supabase } from '@/integrations/supabase/client.ts';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast.ts';
 import { Loader2 } from 'lucide-react';
 
@@ -56,19 +57,34 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
 
   const handleSendCode = async () => {
     setSendingCode(true);
-    console.log('Resending verification code via edge function', { email, newPhone });
+    console.log('Sending verification code via edge function', { email, newPhone });
 
     try {
       const { data, error } = await supabase.functions.invoke('send-phone-verification', {
-        body: { email, newPhone, action: 'send' },
+        body: JSON.stringify({ email, newPhone, action: 'send' }),
       });
 
-      console.log('Resend result:', { data, error });
+      console.log('Send code result:', { data, error });
 
       if (error) {
+        let errorMessage = 'Failed to send verification code';
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const errBody = await error.context.json();
+            console.error('Function error:', errBody);
+            errorMessage = errBody?.error || errorMessage;
+          } catch {
+            const txt = await error.context.text();
+            console.error('Function error (text):', txt);
+            errorMessage = txt || errorMessage;
+          }
+        } else {
+          console.error('Supabase client error:', error);
+          errorMessage = error.message || errorMessage;
+        }
         toast({
           title: 'Error',
-          description: error.message || 'Failed to send verification code',
+          description: errorMessage,
           variant: 'destructive',
         });
         return;
@@ -90,7 +106,8 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         description: 'Check your email for the 6-digit verification code.',
       });
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
-    } catch (_err: unknown) {
+    } catch (err: unknown) {
+      console.error('Unexpected error sending code:', err);
       toast({
         title: 'Error',
         description: 'Failed to send verification code. Please try again.',
@@ -147,14 +164,30 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-phone-verification', {
-        body: { email, code: fullCode, action: 'verify' },
+        body: JSON.stringify({ email, code: fullCode, action: 'verify' }),
       });
 
-      if (error) {
+      console.log('Verify result:', { data, error });
 
+      if (error) {
+        let errorMessage = 'Invalid verification code';
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const errBody = await error.context.json();
+            console.error('Function error:', errBody);
+            errorMessage = errBody?.error || errorMessage;
+          } catch {
+            const txt = await error.context.text();
+            console.error('Function error (text):', txt);
+            errorMessage = txt || errorMessage;
+          }
+        } else {
+          console.error('Supabase client error:', error);
+          errorMessage = error.message || errorMessage;
+        }
         toast({
           title: 'Error',
-          description: error.message || 'Invalid verification code',
+          description: errorMessage,
           variant: 'destructive',
         });
         return;
@@ -180,8 +213,8 @@ const PhoneVerificationDialog: React.FC<PhoneVerificationDialogProps> = ({
         setCode(['', '', '', '', '', '']);
         setCodeSent(false);
       }
-    } catch (_err: unknown) {
-
+    } catch (err: unknown) {
+      console.error('Unexpected error verifying code:', err);
       toast({
         title: 'Error',
         description: 'Verification failed. Please try again.',
